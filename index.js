@@ -16,7 +16,7 @@ app.use(express.static(__dirname+'/public'));
 //     res.sendFile(path.join(__dirname+'/pages/lost.html'));
 // })
 
-won
+//won
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname+'/pages/won.html'));
 })
