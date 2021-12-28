@@ -12,14 +12,14 @@ const port = process.env.PORT || 3000
 app.use(express.static(__dirname+'/public'));
 
 //lost
-// app.get('/', (req, res) => {
-//     res.sendFile(path.join(__dirname+'/pages/lost.html'));
-// })
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname+'/pages/lost.html'));
+})
 
 //won
-app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname+'/pages/won.html'));
-})
+// app.get('/', (req, res) => {
+//     res.sendFile(path.join(__dirname+'/pages/won.html'));
+// })
 
 app.listen(port, () => {
     console.log(`App listening at http://localhost:${port}`)
