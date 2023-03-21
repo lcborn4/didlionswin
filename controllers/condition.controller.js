@@ -1,42 +1,48 @@
 const axios = require("axios");
 
-module.exports = {
-  async checkScore() {
-    console.log("checking score");
+//lions team id = 8
+const LIONSID = "8";
 
-    let result = await axios.get(
+module.exports = {
+  async checkResult() {
+    console.log("checking result");
+
+    let result = false; //initial to loser
+
+    let schedule = await axios.get(
       "https://site.api.espn.com/apis/site/v2/sports/football/nfl/teams/8/schedule"
     );
 
-    let scoreboard = await axios.get(
-      " https://sports.core.api.espn.com/v2/sports/football/leagues/nfl/events/401437952"
-    );
+    let scoreboardUrl =
+      "https://sports.core.api.espn.com/v2/sports/football/leagues/nfl/events";
 
-    let gameScore = await axios.get(
-      "http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/events/401437952/competitions/401437952/competitors/8/score?lang=en&region=us"
-    );
+    // let gameScore = await axios.get(
+    //   "http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/events/401437952/competitions/401437952/competitors/8/score?lang=en&region=us"
+    // );
 
-    console.log("result.data", result.data);
-    console.log("result.data.events length", result.data.events.length);
-    console.log("result.data.events", result.data.events);
-    console.log("result.data.events[16]", result.data.events[16]);
+    // console.log("result.data", result.data);
+    // console.log("result.data.events length", result.data.events.length);
+    console.log("schedule.data.events", schedule.data.events);
+    let scheduleLength = schedule.data.events.length;
     console.log(
-      "result.data.events[16].competitions",
-      result.data.events[16].competitions
+      "schedule.data.events[scheduleLength]",
+      schedule.data.events[scheduleLength - 1]
     );
+    let lastGameId = schedule.data.events[scheduleLength - 1].id;
 
-    console.log(
-      "scoreboard.data",
-      scoreboard.data.competitions[0].competitors[0]
-    );
-    console.log(
-      "scoreboard.data",
-      scoreboard.data.competitions[0].competitors[1]
-    );
+    let lastGame = await axios.get(scoreboardUrl + "/" + lastGameId);
+    console.log("lastGame", lastGame);
+    let competitors = lastGame.data.competitions[0].competitors;
+    console.log("competitors");
+    //find the team and result
+    competitors.forEach((competitor) => {
+      console.log("competitor", competitor);
 
-    console.log("gameScore", gameScore);
+      if (competitor.id === LIONSID) {
+        result = competitor.winner;
+      }
+    });
 
-    let score = 0;
-    return score;
+    return result;
   },
 };

@@ -14,8 +14,8 @@ app.use(express.static(__dirname + "/public"));
 
 //won
 app.get("/", async (req, res) => {
-  let score = await condition.checkScore();
-  console.log("score", score);
+  let result = await condition.checkResult();
+  console.log("result", result);
   res.sendFile(path.join(__dirname + "/pages/won.html"));
 });
 
