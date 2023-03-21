@@ -1,15 +1,11 @@
-const express = require('express')
-const app = express()
-const path = require('path');
-const port = process.env.PORT || 3000
+const express = require("express");
+const app = express();
+const path = require("path");
+const port = process.env.PORT || 3000;
 
-/* 
-    Incase you are using mongodb atlas database uncomment below line
-    and replace "mongoAtlasUri" with your mongodb atlas uri.
-*/
-// mongoose.connect( mongoAtlasUri, {useNewUrlParser: true, useUnifiedTopology: true})
+const condition = require("./controllers/condition.controller");
 
-app.use(express.static(__dirname+'/public'));
+app.use(express.static(__dirname + "/public"));
 
 //lost
 // app.get('/', (req, res) => {
@@ -17,10 +13,12 @@ app.use(express.static(__dirname+'/public'));
 // })
 
 //won
-app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname+'/pages/won.html'));
-})
+app.get("/", async (req, res) => {
+  let score = await condition.checkScore();
+  console.log("score", score);
+  res.sendFile(path.join(__dirname + "/pages/won.html"));
+});
 
 app.listen(port, () => {
-    console.log(`App listening at http://localhost:${port}`)
-})
+  console.log(`App listening at http://localhost:${port}`);
+});
