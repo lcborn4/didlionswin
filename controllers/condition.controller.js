@@ -7,6 +7,7 @@ module.exports = {
   async checkResult() {
     console.log("checking result");
 
+    let game = {};
     let result = false; //initial to loser
 
     let schedule = await axios.get(
@@ -24,25 +25,37 @@ module.exports = {
     // console.log("result.data.events length", result.data.events.length);
     console.log("schedule.data.events", schedule.data.events);
     let scheduleLength = schedule.data.events.length;
+    //full event
     console.log(
       "schedule.data.events[scheduleLength]",
       schedule.data.events[scheduleLength - 1]
     );
-    let lastGameId = schedule.data.events[scheduleLength - 1].id;
 
-    let lastGame = await axios.get(scoreboardUrl + "/" + lastGameId);
-    console.log("lastGame", lastGame);
-    let competitors = lastGame.data.competitions[0].competitors;
-    console.log("competitors");
+    console.log(
+      "schedule.data.events[scheduleLength].name",
+      schedule.data.events[scheduleLength - 1].name
+    );
+
+    game.name = schedule.data.events[scheduleLength - 1].name;
+    game.date = schedule.data.events[scheduleLength - 1].date;
+
+    let latestGameId = schedule.data.events[scheduleLength - 1].id;
+
+    let latestGame = await axios.get(scoreboardUrl + "/" + latestGameId);
+    // console.log("latestGame", latestGame);
+    let competitors = latestGame.data.competitions[0].competitors;
     //find the team and result
     competitors.forEach((competitor) => {
-      console.log("competitor", competitor);
+      // console.log("competitor", competitor);
 
       if (competitor.id === LIONSID) {
         result = competitor.winner;
       }
     });
 
-    return result;
+    //update game object
+    game.result = result;
+
+    return game;
   },
 };
