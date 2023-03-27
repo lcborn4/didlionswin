@@ -35,11 +35,11 @@ export default async function Home() {
                 </div>
                 {/* </div> */}
                 <Condition {...game} />
-                <Facts {...gameResult} />
+                <Facts {...game} />
 
                 <div className={styles.grid}>
                     <div>
-                        <PrevCondition {...game} />
+                        <PrevCondition />
                         {/* <a
                             href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
                             className={styles.card}
@@ -88,18 +88,18 @@ async function getGame() {
 
     // console.log("result.data", result.data);
     // console.log("result.data.events length", result.data.events.length);
-    console.log("schedule.data.events", schedule.data.events);
+    // console.log("schedule.data.events", schedule.data.events);
     let scheduleLength = schedule.data.events.length;
     //full event
-    console.log(
-        "schedule.data.events[scheduleLength]",
-        schedule.data.events[scheduleLength - 1]
-    );
+    // console.log(
+    //     "schedule.data.events[scheduleLength]",
+    //     schedule.data.events[scheduleLength - 1]
+    // );
 
-    console.log(
-        "schedule.data.events[scheduleLength].name",
-        schedule.data.events[scheduleLength - 1].name
-    );
+    // console.log(
+    //     "schedule.data.events[scheduleLength].name",
+    //     schedule.data.events[scheduleLength - 1].name
+    // );
 
     game.name = schedule.data.events[scheduleLength - 1].name;
     game.date = schedule.data.events[scheduleLength - 1].date;

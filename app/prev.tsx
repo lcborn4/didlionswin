@@ -5,6 +5,7 @@ import { RingLoader } from "react-spinners";
 const axios = require("axios");
 //lions team id = 8
 const LIONSID = "8";
+const SCHEDULEMAXLENGTH = 18;
 
 interface Game {
     name: string
@@ -12,10 +13,10 @@ interface Game {
     result: boolean
 }
 
-async function testFunction() {
-    console.log('testing function')
+async function getPrevGame() {
+    // console.log('testing function')
 
-    console.log("checking result");
+    // console.log("checking result");
 
     let game: any = {};
     let result = false; //initial to loser
@@ -33,18 +34,18 @@ async function testFunction() {
 
     // console.log("result.data", result.data);
     // console.log("result.data.events length", result.data.events.length);
-    console.log("schedule.data.events", schedule.data.events);
+    // console.log("schedule.data.events", schedule.data.events);
     let scheduleLength = schedule.data.events.length;
     //full event
-    console.log(
-        "schedule.data.events[scheduleLength]",
-        schedule.data.events[scheduleLength - 1]
-    );
+    // console.log(
+    //     "schedule.data.events[scheduleLength]",
+    //     schedule.data.events[scheduleLength - 1]
+    // );
 
-    console.log(
-        "schedule.data.events[scheduleLength].name",
-        schedule.data.events[scheduleLength - 1].name
-    );
+    // console.log(
+    //     "schedule.data.events[scheduleLength].name",
+    //     schedule.data.events[scheduleLength - 1].name
+    // );
 
     game.name = schedule.data.events[scheduleLength - 1].name;
     game.date = schedule.data.events[scheduleLength - 1].date;
@@ -65,7 +66,7 @@ async function testFunction() {
 
     //update game object
     game.result = result;
-    console.log('returning game: ', game);
+    console.log('returning prev game: ', game);
     return game;
 
     // console.log('returning game: ', game);
@@ -74,10 +75,11 @@ async function testFunction() {
 
 
 const GetPrevCondition = async () => {
-    const prev = await testFunction();
+    const prev = await getPrevGame();
 
     return (
         <div>
+            Previous Game
             <p>{prev.name}</p>
             <p>{prev.date}</p>
             <p>{prev.result}</p>
@@ -86,22 +88,22 @@ const GetPrevCondition = async () => {
     // <p>{condition}</p>);
 };
 
-// export const PrevCondition = () => (
-//     <div className={styles.pitch}>
-//         <Suspense fallback={<RingLoader color="blue" loading />}>
-//             {/* @ts-expect-error Server Component */}
-//             <GetPrevCondition />
-//         </Suspense>
-//     </div>
-// );
-
-export const PrevCondition = (game: Game) => (
+export const PrevCondition = () => (
     <div className={styles.pitch}>
-        <div>
-            Game
-            <p>{game.name}</p>
-            <p>{game.date}</p>
-            <p>{game.result}</p>
-        </div>
+        <Suspense fallback={<RingLoader color="blue" loading />}>
+            {/* @ts-expect-error Server Component */}
+            <GetPrevCondition />
+        </Suspense>
     </div>
 );
+
+// export const PrevCondition = (game: Game) => (
+//     <div className={styles.pitch}>
+//         <div>
+//             Game
+//             <p>{game.name}</p>
+//             <p>{game.date}</p>
+//             <p>{game.result}</p>
+//         </div>
+//     </div>
+// );

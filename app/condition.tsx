@@ -86,12 +86,10 @@ interface Game {
 // };
 
 export const Condition = (game: Game) => (
-    <div className={styles.pitch}>
+    // <div className={styles.pitch}>
+    <div>
         <div>
-            Game
-            <p>{game.name}</p>
-            <p>{game.date}</p>
-            <p>{game.result}</p>
+            <p>{game.result ? 'Yes' : 'Nope'}</p>
         </div>
     </div>
 );
