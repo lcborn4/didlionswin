@@ -7,6 +7,8 @@ import { PrevCondition } from "./prev";
 import { CurrentCondition } from "./current";
 import { NextCondition } from "./next";
 
+import { Facts } from "./facts";
+
 const axios = require("axios");
 //lions team id = 8
 const LIONSID = "8";
@@ -21,8 +23,9 @@ interface Game {
 
 export default async function Home() {
 
-    let game = await testFunction();
-
+    let game = await getGame();
+    let gameResult = game.result;
+    console.log('gameResult', gameResult)
     return (
         <>
             <main className={styles.main}>
@@ -32,7 +35,7 @@ export default async function Home() {
                 </div>
                 {/* </div> */}
                 <Condition {...game} />
-
+                <Facts {...gameResult} />
 
                 <div className={styles.grid}>
                     <div>
@@ -64,7 +67,7 @@ export default async function Home() {
     );
 }
 
-async function testFunction() {
+async function getGame() {
     console.log('testing function')
 
     console.log("checking result");
