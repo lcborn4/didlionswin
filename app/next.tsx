@@ -1,29 +1,19 @@
-import type { GetServerSideProps } from 'next'
-// const axios = require("axios");
-// //lions team id = 8
-// const LIONSID = "8";
+import styles from "@/styles/Home.module.css";
+import { cache, Suspense } from "react";
+import { RingLoader } from "react-spinners";
+
+const axios = require("axios");
+//lions team id = 8
+const LIONSID = "8";
 
 interface Game {
     name: string
     date: string
     result: boolean
 }
-const ConditionPage = (game: Game) => {
 
-    console.log('Condition - game', game)
-    console.log('result', game.result);
-
-    let result = game.result ? 'true' : 'false';
-
-    return (
-        <>
-            <p>{game.name}</p>
-            <p>{game.date}</p>
-            <p>Result: {result}</p>
-        </>
-    )
-}
-// export const getServerSideProps: GetServerSideProps = async () => {
+// async function testFunction() {
+//     console.log('testing function')
 
 //     console.log("checking result");
 
@@ -75,17 +65,35 @@ const ConditionPage = (game: Game) => {
 
 //     //update game object
 //     game.result = result;
-
-//     // return game;
-
 //     console.log('returning game: ', game);
+//     return game;
 
+//     // console.log('returning game: ', game);
 
-
-//     return {
-//         props: {
-//             game
-//         }
-//     }
 // }
-export default ConditionPage
+
+
+// const GetNextCondition = async () => {
+//     const next = await testFunction();
+
+//     //obviously not going to have results
+//     return (
+//         <div>
+//             <p>{next.name}</p>
+//             <p>{next.date}</p>
+//             <p>{next.result}</p>
+//         </div>
+//     )
+//     // <p>{condition}</p>);
+// };
+
+export const NextCondition = (game: Game) => (
+    <div className={styles.pitch}>
+        <div>
+            Game
+            <p>{game.name}</p>
+            <p>{game.date}</p>
+            <p>{game.result}</p>
+        </div>
+    </div>
+);
