@@ -7,11 +7,28 @@ const axios = require("axios");
 const LIONSID = "8";
 
 export const Facts = (gameResult: boolean) => (
-    <div className={styles.pitch}>
-        <div>
-            Facts
-            {gameResult ? 'Win' : 'Loss'}
-        </div>
-    </div>
+    <Suspense fallback={<RingLoader color="blue" loading />}>
+        {/* @ts-expect-error Server Component */}
+        <Fact {...gameResult} />
+    </Suspense>
 );
+
+const Fact = async (gameResult: boolean) => {
+
+    //random number generate
+    //pull from array of images and stats
+
+    //loss images
+    // [] = []
+    //win images
+
+
+
+    return (
+        <div>
+            <p>image</p>
+            <p>caption</p>
+        </div>);
+};
+
 
