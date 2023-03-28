@@ -23,7 +23,7 @@ interface Game {
 
 export default async function Home() {
 
-    let game = await getGame();
+    let game = await getLatestGame();
     let gameResult = game.result;
     console.log('gameResult', gameResult)
     return (
@@ -67,7 +67,7 @@ export default async function Home() {
     );
 }
 
-async function getGame() {
+async function getLatestGame() {
     console.log('testing function')
 
     console.log("checking result");

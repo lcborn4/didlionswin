@@ -38,7 +38,7 @@ async function getPrevGame() {
     let scheduleLength = schedule.data.events.length;
     //full event
     // console.log(
-    //     "schedule.data.events[scheduleLength]",
+    //     "schedule.data.events[scheduleLength-1]",
     //     schedule.data.events[scheduleLength - 1]
     // );
 
@@ -47,26 +47,78 @@ async function getPrevGame() {
     //     schedule.data.events[scheduleLength - 1].name
     // );
 
-    game.name = schedule.data.events[scheduleLength - 1].name;
-    game.date = schedule.data.events[scheduleLength - 1].date;
+    // console.log(
+    //     "schedule.data.events[scheduleLength-1].competitions",
+    //     schedule.data.events[scheduleLength - 1].competitions
+    // );
+
+    // console.log(
+    //     "schedule.data.events[scheduleLength-1].competitions[0]",
+    //     schedule.data.events[scheduleLength - 1].competitions[0]
+    // );
+
+    // console.log(
+    //     "Prev Game Status",
+    //     schedule.data.events[scheduleLength - 1].competitions[0].status.type.completed
+    // );
+
+    // game.name = schedule.data.events[scheduleLength - 1].name;
+    // game.date = schedule.data.events[scheduleLength - 1].date;
 
     let latestGameId = schedule.data.events[scheduleLength - 1].id;
 
     let latestGame = await axios.get(scoreboardUrl + "/" + latestGameId);
-    // console.log("latestGame", latestGame);
+    // console.log("latestGame.data", latestGame.data);
     let competitors = latestGame.data.competitions[0].competitors;
+    let previousCompetition = null;
     //find the team and result
     competitors.forEach((competitor: any) => {
         // console.log("competitor", competitor);
 
         if (competitor.id === LIONSID) {
             result = competitor.winner;
+            previousCompetition = competitor.previousCompetition
         }
     });
 
+    console.log('previousCompetition', previousCompetition)
+
+    //get the previous competition
+    if (previousCompetition) {
+        let prevGameUrl = previousCompetition['$ref']
+        // console.log('prevGameUrl', prevGameUrl)
+        let previousGameResult = await axios(prevGameUrl);
+        console.log('previousGameResult.data', previousGameResult.data);
+        let prevGameId = previousGameResult.data.id;
+        console.log('prevGameId', prevGameId)
+        let prevGame = await axios.get(scoreboardUrl + "/" + prevGameId);
+        console.log('prevGame.Data', prevGame.data);
+        game.name = prevGame.data.name;
+        game.date = prevGame.data.date;
+        let prevCompetitors = previousGameResult.data.competitors;
+        //loop through until lions
+        prevCompetitors.forEach((competitor: any) => {
+            // console.log("competitor", competitor);
+
+            if (competitor.id === LIONSID) {
+                result = competitor.winner;
+                console.log('prev result', result)
+            }
+        });
+
+    }
+    else {
+        game.name = 'NO GAME'
+    }
     //update game object
     game.result = result;
     console.log('returning prev game: ', game);
+    //debug
+    // game.name = 'NO GAME'
+
+
+
+
     return game;
 
     // console.log('returning game: ', game);
@@ -77,7 +129,16 @@ async function getPrevGame() {
 const GetPrevCondition = async () => {
     const prev = await getPrevGame();
 
+    if (prev.name === 'NO GAME') {
+        return (<div>
+            Previous Game
+            <p>No Game</p>
+        </div>
+        )
+    }
+
     return (
+
         <div>
             Previous Game
             <p>{prev.name}</p>
