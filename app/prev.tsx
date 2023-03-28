@@ -81,18 +81,18 @@ async function getPrevGame() {
         }
     });
 
-    console.log('previousCompetition', previousCompetition)
+    // console.log('previousCompetition', previousCompetition)
 
     //get the previous competition
     if (previousCompetition) {
         let prevGameUrl = previousCompetition['$ref']
         // console.log('prevGameUrl', prevGameUrl)
         let previousGameResult = await axios(prevGameUrl);
-        console.log('previousGameResult.data', previousGameResult.data);
+        // console.log('previousGameResult.data', previousGameResult.data);
         let prevGameId = previousGameResult.data.id;
-        console.log('prevGameId', prevGameId)
+        // console.log('prevGameId', prevGameId)
         let prevGame = await axios.get(scoreboardUrl + "/" + prevGameId);
-        console.log('prevGame.Data', prevGame.data);
+        // console.log('prevGame.Data', prevGame.data);
         game.name = prevGame.data.name;
         game.date = prevGame.data.date;
         let prevCompetitors = previousGameResult.data.competitors;
@@ -102,7 +102,7 @@ async function getPrevGame() {
 
             if (competitor.id === LIONSID) {
                 result = competitor.winner;
-                console.log('prev result', result)
+                // console.log('prev result', result)
             }
         });
 
@@ -112,7 +112,7 @@ async function getPrevGame() {
     }
     //update game object
     game.result = result;
-    console.log('returning prev game: ', game);
+    // console.log('returning prev game: ', game);
     //debug
     // game.name = 'NO GAME'
 
@@ -143,7 +143,7 @@ const GetPrevCondition = async () => {
             Previous Game
             <p>{prev.name}</p>
             <p>{prev.date}</p>
-            <p>{prev.result}</p>
+            <p>{prev.result ? 'WIN' : 'LOSS'}</p>
         </div>
     )
     // <p>{condition}</p>);
