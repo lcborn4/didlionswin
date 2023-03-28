@@ -102,7 +102,7 @@ export const CurrentCondition = (game: Game) => (
             Current
             <p>{game.name}</p>
             <p>{game.date}</p>
-            <p>{game.result}</p>
+            <p>{game.result ? 'WIN' : 'LOSS'}</p>
         </div>
     </div>
 );
