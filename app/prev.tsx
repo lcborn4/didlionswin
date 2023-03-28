@@ -77,7 +77,7 @@ async function getPrevGame() {
 
         if (competitor.id === LIONSID) {
             result = competitor.winner;
-            previousCompetition = competitor.previousCompetition
+            previousCompetition = competitor.previousCompetition;
         }
     });
 
