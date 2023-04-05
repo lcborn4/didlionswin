@@ -135,7 +135,7 @@ const GetNextCondition = async () => {
 
     if (next.name === 'NO GAME') {
         return (<div>
-            Next Game
+            <h2>Next Game</h2>
             <p>No Game</p>
         </div>
         )
@@ -143,7 +143,7 @@ const GetNextCondition = async () => {
 
     return (
         <div>
-            Next Game
+            <h2>Next Game</h2>
             <p>{next.name}</p>
             <p>{next.date}</p>
             <p>{next.result ? 'WIN' : 'LOSS'}</p>

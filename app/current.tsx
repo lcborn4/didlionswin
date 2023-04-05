@@ -99,7 +99,7 @@ const GetCurrentCondition = async () => {
 export const CurrentCondition = (game: Game) => (
     <div className={styles.pitch}>
         <div>
-            Current
+            <h2>Current Game</h2>
             <p>{game.name}</p>
             <p>{game.date}</p>
             <p>{game.result ? 'WIN' : 'LOSS'}</p>

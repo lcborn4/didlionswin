@@ -1,12 +1,15 @@
 import styles from "@/styles/Home.module.css";
 import { cache, Suspense } from "react";
 import { RingLoader } from "react-spinners";
+import { Inter } from "@next/font/google";
 
 const axios = require("axios");
 //lions team id = 8
 const LIONSID = "8";
 const SCHEDULEMAXLENGTH = 18;
 
+
+const inter = Inter({ subsets: ['latin'] })
 interface Game {
     name: string
     date: string
@@ -129,10 +132,27 @@ async function getPrevGame() {
 const GetPrevCondition = async () => {
     const prev = await getPrevGame();
 
+    {/* <a
+                            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
+                            className={styles.card}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                        >
+                            <h2 className={inter.className}>
+                                Docs <span>-&gt;</span>
+                            </h2>
+                            <p className={inter.className}>
+                                Find in-depth information about Next.js features and&nbsp;API.
+                            </p>
+                        </a> */}
+
     if (prev.name === 'NO GAME') {
         return (<div>
             Previous Game
             <p>No Game</p>
+            <h2 className={inter.className}>
+                Docs <span>-&gt;</span>
+            </h2>
         </div>
         )
     }
@@ -140,7 +160,7 @@ const GetPrevCondition = async () => {
     return (
 
         <div>
-            Previous Game
+            <h2>Previous Game</h2>
             <p>{prev.name}</p>
             <p>{prev.date}</p>
             <p>{prev.result ? 'WIN' : 'LOSS'}</p>
