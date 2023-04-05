@@ -12,7 +12,9 @@ import { Facts } from "./facts";
 const axios = require("axios");
 //lions team id = 8
 const LIONSID = "8";
-const MAXNUM = 10;//10 images and 10 quotes
+
+const IMAGEMAXNUM = 10;//10 images 
+const FACTMAXNUM = 10;//10 quotes
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -28,8 +30,10 @@ export default async function Home() {
     let gameResult = game.result;
     console.log('gameResult', gameResult)
 
-    let random = getRandomInt(MAXNUM);
-    console.log('random', random);
+    let randomImageNum = getRandomInt(IMAGEMAXNUM);
+    let randomFactNum = getRandomInt(FACTMAXNUM);
+    console.log('random image num', randomImageNum);
+    console.log('random fact num', randomFactNum)
 
     return (
         <>
@@ -39,7 +43,10 @@ export default async function Home() {
                     Did The Detroit Lions Win?
                 </div>
                 <div>
-                    {random}
+                    {randomImageNum}
+                </div>
+                <div>
+                    {randomFactNum}
                 </div>
                 {/* </div> */}
                 <Condition {...game} />
