@@ -4,7 +4,7 @@ import styles from "@/styles/Home.module.css";
 
 import { Condition } from "./condition";
 import { PrevCondition } from "./prev";
-import { CurrentCondition } from "./current";
+import { LatestCondition } from "./latest";
 import { NextCondition } from "./next";
 
 import { Facts } from "./facts";
@@ -50,7 +50,7 @@ export default async function Home() {
                         <PrevCondition />
                     </div>
                     <div>
-                        <CurrentCondition {...game} />
+                        <LatestCondition {...game} />
                     </div>
                     <div>
                         <NextCondition />

@@ -73,7 +73,7 @@ async function testFunction() {
 }
 
 
-const GetCurrentCondition = async () => {
+const GetLatestCondition = async () => {
     const prev = await testFunction();
 
     return (
@@ -86,20 +86,20 @@ const GetCurrentCondition = async () => {
     // <p>{condition}</p>);
 };
 
-// export const CurrentCondition = () => (
+// export const LatestCondition = () => (
 //     <div className={styles.pitch}>
 //         <Suspense fallback={<RingLoader color="blue" loading />}>
 //             {/* @ts-expect-error Server Component */}
-//             <GetCurrentCondition />
+//             <GetLatestCondition />
 //         </Suspense>
 //     </div>
 // );
 
 
-export const CurrentCondition = (game: Game) => (
+export const LatestCondition = (game: Game) => (
     <div className={styles.pitch}>
         <div>
-            <h2>Current Game</h2>
+            <h2>Latest Game</h2>
             <p>{game.name}</p>
             <p>{game.date}</p>
             <p>{game.result ? 'WIN' : 'LOSS'}</p>
