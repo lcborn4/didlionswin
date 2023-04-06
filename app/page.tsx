@@ -13,9 +13,6 @@ const axios = require("axios");
 //lions team id = 8
 const LIONSID = "8";
 
-const IMAGEMAXNUM = 10;//10 images 
-const FACTMAXNUM = 10;//10 quotes
-
 const inter = Inter({ subsets: ['latin'] })
 
 interface Game {
@@ -30,23 +27,12 @@ export default async function Home() {
     let gameResult = game.result;
     console.log('gameResult', gameResult)
 
-    let randomImageNum = getRandomInt(IMAGEMAXNUM);
-    let randomFactNum = getRandomInt(FACTMAXNUM);
-    console.log('random image num', randomImageNum);
-    console.log('random fact num', randomFactNum)
-
     return (
         <>
             <main className={styles.main}>
                 {/* <div className={styles.description}> */}
                 <div>
                     Did The Detroit Lions Win?
-                </div>
-                <div>
-                    {randomImageNum}
-                </div>
-                <div>
-                    {randomFactNum}
                 </div>
                 {/* </div> */}
                 <Condition {...game} />
@@ -127,10 +113,4 @@ async function getLatestGame() {
 
     // console.log('returning game: ', game);
 
-}
-
-//get random number
-//generate image
-function getRandomInt(num: number) {
-    return Math.floor(Math.random() * num);
 }
