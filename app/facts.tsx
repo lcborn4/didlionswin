@@ -1,15 +1,24 @@
 import styles from "@/styles/Home.module.css";
 import { cache, Suspense } from "react";
 import { RingLoader } from "react-spinners";
+import Image from 'next/image'
 
+//images
+import badImages from '../assets/bad_images.json';
+import goodImages from '../assets/good_images.json';
+
+//facts
 import badFacts from '../assets/bad_facts.json';
 import goodFacts from '../assets/good_facts.json';
+
+import mountains from '../public/images/bad/bearsthanksgiving2021.jpeg';
 
 const axios = require("axios");
 //lions team id = 8
 const LIONSID = "8";
 
-const IMAGEMAXNUM = 10;//10 images 
+const BADIMAGEMAXNUM = 5;//5 images 
+const GOODIMAGEMAXNUM = 3;//3images 
 const GOODFACTMAXNUM = 10;//10 quotes
 const BADFACTMAXNUM = 8;//8 quotes
 
@@ -18,7 +27,6 @@ interface Game {
     date: string
     result: boolean
 }
-
 
 export const Facts = (game: Game) => (
     <div>
@@ -36,17 +44,23 @@ const Fact = async (game: Game) => {
 
     console.log(game.result ? 'WON' : 'LOST')
     let gameResult: boolean = game.result;
-    gameResult = false;
+    // gameResult = false;
 
     // random image
 
-    let randomImageNum = getRandomInt(IMAGEMAXNUM);
+    let randomImageNum = getRandomInt(GOODIMAGEMAXNUM);
+    let randomImage: string = '';
 
     if (!gameResult) {
+        let randomImageNum = getRandomInt(BADIMAGEMAXNUM);
+        console.log('badImages[randomImageNum].image', badImages[randomImageNum].image)
         // bad images
+        randomImage = badImages[randomImageNum].image;
     }
     else {
         //good images
+        console.log('badImages[randomImageNum].image', goodImages[randomImageNum].image)
+        randomImage = goodImages[randomImageNum].image;
     }
 
 
@@ -68,9 +82,18 @@ const Fact = async (game: Game) => {
 
     return (
 
-
         <div>
-            <p>image</p>
+            <Image
+                alt="Bad"
+                src={randomImage}
+                width={100}
+                height={100}
+                // fill
+                sizes="100vw"
+                style={{
+                    objectFit: 'cover',
+                }}
+            />
             <p>{fact}</p>
         </div>);
 };
