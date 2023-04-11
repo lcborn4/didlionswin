@@ -86,8 +86,8 @@ const Fact = async (game: Game) => {
             <Image
                 alt="Bad"
                 src={randomImage}
-                width={100}
-                height={100}
+                width={200}
+                height={200}
                 // fill
                 sizes="100vw"
                 style={{
