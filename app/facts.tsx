@@ -83,17 +83,18 @@ const Fact = async (game: Game) => {
     return (
 
         <div>
+            <div className={styles.randomimage}>
             <Image
                 alt="Bad"
                 src={randomImage}
                 width={200}
                 height={200}
-                // fill
                 sizes="100vw"
                 style={{
                     objectFit: 'cover',
                 }}
             />
+            </div>
             <p>{fact}</p>
         </div>);
 };
