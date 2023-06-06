@@ -13,4 +13,4 @@ pnpm dev
 ```
 
 ### NextJs
-[NextJs info](https://github.com/lcborn4/didlionswin/blob/master/documentation/NextJs.md)
+[NextJs info](https://github.com/lcborn4/didlionswin/blob/master/Documentation/NextJs.md)
