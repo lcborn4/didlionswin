@@ -36,7 +36,9 @@ export default async function Home() {
                 <main className={styles.main}>
                     {/* <div className={styles.description}> */}
                     <div>
-                        Did The Detroit Lions Win?
+                        <h1>
+                            Did The Detroit Lions Win?
+                        </h1>
                     </div>
                     {/* </div> */}
 
@@ -52,7 +54,9 @@ export default async function Home() {
                 <main className={styles.main}>
                     {/* <div className={styles.description}> */}
                     <div>
-                        Did The Detroit Lions Win?
+                        <h1>
+                            Did The Detroit Lions Win?
+                        </h1>
                     </div>
                     {/* </div> */}
 
