@@ -26,33 +26,55 @@ export default async function Home() {
     let game = await getLatestGame();
     let gameResult = game.result;
     console.log('gameResult', gameResult)
+    let offSeason = await checkOffSeason();
+    console.log('offseason', offSeason);
 
-    return (
-        <>
-            <main className={styles.main}>
-                {/* <div className={styles.description}> */}
-                <div>
-                    Did The Detroit Lions Win?
-                </div>
-                {/* </div> */}
-                <Condition {...game} />
-                <Facts {...game} />
 
-                <div className={styles.grid}>
+    if (offSeason) {
+        return (
+            <>
+                <main className={styles.main}>
+                    {/* <div className={styles.description}> */}
                     <div>
-                        <PrevCondition />
+                        Did The Detroit Lions Win?
                     </div>
-                    <div>
-                        <LatestCondition {...game} />
-                    </div>
-                    <div>
-                        <NextCondition />
-                    </div>
+                    {/* </div> */}
 
-                </div>
-            </main>
-        </>
-    );
+                    OffSeason
+                </main>
+            </>
+        )
+    }
+    else {
+
+        return (
+            <>
+                <main className={styles.main}>
+                    {/* <div className={styles.description}> */}
+                    <div>
+                        Did The Detroit Lions Win?
+                    </div>
+                    {/* </div> */}
+
+                    <Condition {...game} />
+                    <Facts {...game} />
+
+                    <div className={styles.grid}>
+                        <div>
+                            <PrevCondition />
+                        </div>
+                        <div>
+                            <LatestCondition {...game} />
+                        </div>
+                        <div>
+                            <NextCondition />
+                        </div>
+
+                    </div>
+                </main>
+            </>
+        );
+    }
 }
 
 async function getLatestGame() {
@@ -74,7 +96,13 @@ async function getLatestGame() {
     //   "http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/events/401437952/competitions/401437952/competitors/8/score?lang=en&region=us"
     // );
 
-    // console.log("result.data", result.data);
+    // console.log("schedule.data", schedule.data);
+
+    //     if(schedule.data.season.name ==='Off Season')
+    //     {
+    //         offSeason = true;
+    //     }
+
     // console.log("result.data.events length", result.data.events.length);
     // console.log("schedule.data.events", schedule.data.events);
     let scheduleLength = schedule.data.events.length;
@@ -113,4 +141,14 @@ async function getLatestGame() {
 
     // console.log('returning game: ', game);
 
+}
+
+async function checkOffSeason() {
+    let schedule = await axios.get(
+        "https://site.api.espn.com/apis/site/v2/sports/football/nfl/teams/8/schedule"
+    );
+
+    // console.log("schedule.data", schedule.data);
+
+    return schedule.data.season.name === 'Off Season' ? true : false;
 }
