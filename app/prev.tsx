@@ -17,9 +17,6 @@ interface Game {
 }
 
 async function getPrevGame() {
-    // console.log('testing function')
-
-    // console.log("checking result");
 
     let game: any = {};
     let result = false; //initial to loser
