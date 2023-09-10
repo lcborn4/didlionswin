@@ -114,9 +114,8 @@ async function getNextGame() {
     //update game object
     game.result = result;
     // console.log('returning next game: ', game);
-
     // game.name = 'NO GAME'
-
+    game.date = new Date(game.date).toString();
 
     return game;
 
@@ -151,7 +150,6 @@ async function getNextGame() {
 
 const GetNextCondition = async () => {
     const next = await getNextGame();
-
     if (next.name === 'NO GAME') {
         return (<div>
             <h2>Next Game</h2>

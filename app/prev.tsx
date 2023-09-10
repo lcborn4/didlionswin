@@ -145,7 +145,7 @@ async function getPrevGame() {
     // console.log('returning prev game: ', game);
     //debug
     // game.name = 'NO GAME'
-
+    game.date = new Date(game.date).toString();
 
 
 

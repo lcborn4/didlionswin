@@ -161,10 +161,8 @@ async function getLatestGame() {
     //update game object
     game.result = result;
     console.log('returning game: ', game);
+    game.date = new Date(game.date).toString();
     return game;
-
-    // console.log('returning game: ', game);
-
 }
 
 async function checkOffSeason() {
