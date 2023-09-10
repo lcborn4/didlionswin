@@ -59,7 +59,7 @@ const Fact = async (game: Game) => {
     }
     else {
         //good images
-        console.log('badImages[randomImageNum].image', goodImages[randomImageNum].image)
+        console.log('goodImages[randomImageNum].image', goodImages[randomImageNum].image)
         randomImage = goodImages[randomImageNum].image;
     }
 

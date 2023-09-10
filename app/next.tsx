@@ -1,6 +1,7 @@
 import styles from "@/styles/Home.module.css";
 import { cache, Suspense } from "react";
 import { RingLoader } from "react-spinners";
+import moment from "moment-timezone";
 
 const axios = require("axios");
 //lions team id = 8
@@ -115,7 +116,9 @@ async function getNextGame() {
     game.result = result;
     // console.log('returning next game: ', game);
     // game.name = 'NO GAME'
-    game.date = new Date(game.date).toString();
+    let myTimezone = "America/New-York";
+    let myDatetimeFormat= "YYYY-MM-DD hh:mm:ss a z";
+    game.date = moment(new Date(game.date)).tz(myTimezone).format(myDatetimeFormat);
 
     return game;
 

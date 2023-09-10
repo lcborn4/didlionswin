@@ -3,6 +3,8 @@ import { cache, Suspense } from "react";
 import { RingLoader } from "react-spinners";
 import { Inter } from "@next/font/google";
 
+import moment from "moment-timezone";
+
 const axios = require("axios");
 //lions team id = 8
 const LIONSID = "8";
@@ -145,9 +147,11 @@ async function getPrevGame() {
     // console.log('returning prev game: ', game);
     //debug
     // game.name = 'NO GAME'
-    game.date = new Date(game.date).toString();
+    // game.date = new Date(game.date).toString();
 
-
+    let myTimezone = "America/New-York";
+    let myDatetimeFormat= "YYYY-MM-DD hh:mm:ss a z";
+    game.date = moment(new Date(game.date)).tz(myTimezone).format(myDatetimeFormat);
 
     return game;
 

@@ -2,6 +2,8 @@ import Image from "next/image";
 import { Inter } from "@next/font/google";
 import styles from "@/styles/Home.module.css";
 
+import moment from "moment-timezone";
+
 import { Condition } from "./condition";
 import { PrevCondition } from "./prev";
 import { LatestCondition } from "./latest";
@@ -161,7 +163,12 @@ async function getLatestGame() {
     //update game object
     game.result = result;
     console.log('returning game: ', game);
-    game.date = new Date(game.date).toString();
+    // game.date = new Date(game.date).toString();
+
+    let myTimezone = "America/New-York";
+    let myDatetimeFormat= "YYYY-MM-DD hh:mm:ss a z";
+    game.date = moment(new Date(game.date)).tz(myTimezone).format(myDatetimeFormat);
+
     return game;
 }
 
