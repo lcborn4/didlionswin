@@ -47,10 +47,30 @@ async function getNextGame() {
     //     schedule.data.events[scheduleLength - 1].name
     // );
 
-    game.name = schedule.data.events[scheduleLength - 1].name;
-    game.date = schedule.data.events[scheduleLength - 1].date;
+    //sget todays date
+    let date = new Date();
 
-    let latestGameId = schedule.data.events[scheduleLength - 1].id;
+    //find the latestGame
+    let latestGameIndex = 16; //default to last game
+    schedule.data.events.forEach((event: any ,index: number)=>{
+        if(Date.parse(event.date) < date.getTime())
+        {
+            latestGameIndex = index;
+
+        }
+    })
+    console.log('latestGame - ',latestGameIndex);
+
+    game.name = schedule.data.events[latestGameIndex].name;
+    game.date = schedule.data.events[latestGameIndex].date;
+
+    //old
+    // game.name = schedule.data.events[scheduleLength - 1].name;
+    // game.date = schedule.data.events[scheduleLength - 1].date;
+
+    let latestGameId = schedule.data.events[latestGameIndex].id;
+    //old
+    // let latestGameId = schedule.data.events[scheduleLength - 1].id;
 
     let latestGame = await axios.get(scoreboardUrl + "/" + latestGameId);
     // console.log("Next - latestGame.data", latestGame.data);
@@ -59,7 +79,7 @@ async function getNextGame() {
     // console.log('competitors', competitors);
     //find the team and result
     competitors.forEach((competitor: any) => {
-        // console.log("competitor", competitor);
+        // console.log("current competitor", competitor);
 
         if (competitor.id === LIONSID) {
             result = competitor.winner;
@@ -82,9 +102,8 @@ async function getNextGame() {
         //loop through until lions
         nextCompetitors.forEach((competitor: any) => {
             // console.log("competitor", competitor);
-
             if (competitor.id === LIONSID) {
-                result = competitor.winner;
+                result = competitor.winner || 'upcoming';
                 // console.log('next result', result)
             }
         });
@@ -146,7 +165,7 @@ const GetNextCondition = async () => {
             <h2>Next Game</h2>
             <p>{next.name}</p>
             <p>{next.date}</p>
-            <p>{next.result ? 'WIN' : 'LOSS'}</p>
+            {/* <p>{next.result ? 'WIN' : 'LOSS'}</p> */}
         </div>
     )
     // <p>{condition}</p>);
