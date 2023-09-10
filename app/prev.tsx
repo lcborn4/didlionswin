@@ -149,7 +149,7 @@ async function getPrevGame() {
     // game.name = 'NO GAME'
     // game.date = new Date(game.date).toString();
 
-    let myTimezone = "America/New-York";
+    let myTimezone = "America/New_York";
     let myDatetimeFormat= "YYYY-MM-DD hh:mm:ss a z";
     game.date = moment(new Date(game.date)).tz(myTimezone).format(myDatetimeFormat);
 

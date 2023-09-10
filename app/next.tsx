@@ -116,7 +116,7 @@ async function getNextGame() {
     game.result = result;
     // console.log('returning next game: ', game);
     // game.name = 'NO GAME'
-    let myTimezone = "America/New-York";
+    let myTimezone = "America/New_York";
     let myDatetimeFormat= "YYYY-MM-DD hh:mm:ss a z";
     game.date = moment(new Date(game.date)).tz(myTimezone).format(myDatetimeFormat);
 
