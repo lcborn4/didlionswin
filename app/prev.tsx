@@ -65,7 +65,37 @@ async function getPrevGame() {
     // game.name = schedule.data.events[scheduleLength - 1].name;
     // game.date = schedule.data.events[scheduleLength - 1].date;
 
-    let latestGameId = schedule.data.events[scheduleLength - 1].id;
+    //sget todays date
+    let date = new Date();
+
+    //find the latestGame
+    let latestGameIndex = 16; //default to last game
+    schedule.data.events.forEach((event: any ,index: number)=>{
+        if(Date.parse(event.date) < date.getTime())
+        {
+            latestGameIndex = index;
+
+        }
+    })
+
+    // let latestGameId = schedule.data.events[scheduleLength - 1].id;
+
+    console.log('latestGame - ',latestGameIndex);
+
+    // game.name = schedule.data.events[latestGameIndex].name;
+    // game.date = schedule.data.events[latestGameIndex].date;
+
+
+    game.name = schedule.data.events[latestGameIndex].name;
+    game.date = schedule.data.events[latestGameIndex].date;
+
+    //old
+    // game.name = schedule.data.events[scheduleLength - 1].name;
+    // game.date = schedule.data.events[scheduleLength - 1].date;
+
+    let latestGameId = schedule.data.events[latestGameIndex].id;
+    //old
+    // let latestGameId = schedule.data.events[scheduleLength - 1].id;
 
     let latestGame = await axios.get(scoreboardUrl + "/" + latestGameId);
     // console.log("latestGame.data", latestGame.data);
