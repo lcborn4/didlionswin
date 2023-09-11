@@ -86,7 +86,8 @@ const Fact = async (game: Game) => {
             <div className={styles.randomimage}>
             <Image
                 alt="Bad"
-                src={randomImage}
+                // src={randomImage}
+                src='/images/good/hutchinson_sack.jpg'
                 width={200}
                 height={200}
                 sizes="100vw"
