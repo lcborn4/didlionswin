@@ -86,21 +86,6 @@ const Fact = async (game: Game) => {
             <div style={{position:"relative", height:"200px", width:"280px"}}>
             <Image src={randomImage} alt="" fill style={{objectFit:"cover"}}/>
             </div>
-
-            <div className={styles.randomimage}>
-            <Image
-                unoptimized
-                alt="Bad"
-                src={randomImage}
-                // src='/images/good/hutchinson_sack.jpg'
-                width={200}
-                height={200}
-                sizes="100vw"
-                style={{
-                    objectFit: 'cover',
-                }}
-            />
-            </div>
             <p>{fact}</p>
         </div>
         );
