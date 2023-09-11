@@ -83,9 +83,13 @@ const Fact = async (game: Game) => {
     return (
 
         <div>
+            <div style={{position:"relative", height:"200px", width:"280px"}}>
+            <Image src={randomImage} alt="" fill style={{objectFit:"cover"}}/>
+            </div>
+
             <div className={styles.randomimage}>
             <Image
-            unoptimized
+                unoptimized
                 alt="Bad"
                 src={randomImage}
                 // src='/images/good/hutchinson_sack.jpg'
@@ -98,7 +102,8 @@ const Fact = async (game: Game) => {
             />
             </div>
             <p>{fact}</p>
-        </div>);
+        </div>
+        );
 };
 
 //get random number
