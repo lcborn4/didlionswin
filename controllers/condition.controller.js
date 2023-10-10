@@ -1,5 +1,3 @@
-const axios = require("axios");
-
 //lions team id = 8
 const LIONSID = "8";
 
@@ -10,8 +8,8 @@ module.exports = {
     let game = {};
     let result = false; //initial to loser
 
-    let schedule = await axios.get(
-      "https://site.api.espn.com/apis/site/v2/sports/football/nfl/teams/8/schedule"
+    let schedule = await fetch(
+      "https://site.api.espn.com/apis/site/v2/sports/football/nfl/teams/8/schedule",{ cache: 'no-store' }
     );
 
     let scoreboardUrl =
@@ -41,7 +39,7 @@ module.exports = {
 
     let latestGameId = schedule.data.events[scheduleLength - 1].id;
 
-    let latestGame = await axios.get(scoreboardUrl + "/" + latestGameId);
+    let latestGame = await fetch(scoreboardUrl + "/" + latestGameId ,{ cache: 'no-store' });
     // console.log("latestGame", latestGame);
     let competitors = latestGame.data.competitions[0].competitors;
     //find the team and result

@@ -11,7 +11,6 @@ import { NextCondition } from "./next";
 
 import { Facts } from "./facts";
 
-const axios = require("axios");
 //lions team id = 8
 const LIONSID = "8";
 
@@ -25,13 +24,12 @@ interface Game {
 
 export default async function Home() {
 
-    const timestamp = (await getData()).toString();
-    console.log('timestamp',timestamp.toString());
-    let game = await getLatestGame();
-    let gameResult = game.result;
-    console.log('gameResult', gameResult)
-    let offSeason = await checkOffSeason();
-    console.log('offseason', offSeason);
+    let game = await checkLatestGame();
+    // let gameResult = game.result;
+    // console.log('gameResult', gameResult)
+    let season = await checkOffSeason();
+    let offSeason = season.name === 'Off Season' ? true : false;
+    // console.log('offseason', offSeason);
 
 
     if (offSeason) {
@@ -68,7 +66,6 @@ export default async function Home() {
                     <Facts {...game} />
 
                     <div className={styles.grid}>
-                        {timestamp}
                         <div>
                             <PrevCondition />
                         </div>
@@ -88,61 +85,73 @@ export default async function Home() {
 
 
 
-async function getData() {
-    const res = await fetch("https://site.api.espn.com/apis/site/v2/sports/football/nfl/teams/8/schedule",{ cache: 'no-store' });
-    // The return value is *not* serialized
-    // You can return Date, Map, Set, etc.
-    const timestamp = new Date();
-    // return res.json();
-    return timestamp;
-  }
+// async function getData() {
+//     const res = await fetch("https://site.api.espn.com/apis/site/v2/sports/football/nfl/teams/8/schedule",{ cache: 'no-store' });
+//     // The return value is *not* serialized
+//     // You can return Date, Map, Set, etc.
+//     const timestamp = new Date();
+//     // return res.json();
+//     return timestamp;
+//   }
 
-async function getLatestGame() {
-    console.log('testing function')
+async function getSchedule()
+{
+        let res = await fetch(
+        "https://site.api.espn.com/apis/site/v2/sports/football/nfl/teams/8/schedule",{ cache: 'no-store' }
+    );
 
-    console.log("checking result");
+    return res.json();
+}
+
+async function checkLatestGame() {
+//     console.log('testing function')
+
+//     console.log("checking result");
 
     let game: any = {};
     let result = false; //initial to loser
 
-    let schedule = await axios.get(
-        "https://site.api.espn.com/apis/site/v2/sports/football/nfl/teams/8/schedule"
-    );
+//     let schedule = await fetch(
+//         "https://site.api.espn.com/apis/site/v2/sports/football/nfl/teams/8/schedule",{ cache: 'no-store' }
+//     );
 
-    let scoreboardUrl =
-        "https://sports.core.api.espn.com/v2/sports/football/leagues/nfl/events";
+    let schedule = await getSchedule();
+    console.log('schedule',schedule)
 
-    // let gameScore = await axios.get(
-    //   "http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/events/401437952/competitions/401437952/competitors/8/score?lang=en&region=us"
-    // );
+//     let scoreboardUrl =
+//         "https://sports.core.api.espn.com/v2/sports/football/leagues/nfl/events";
 
-    // console.log("schedule.data", schedule.data);
+//     // let gameScore = await fetch(
+//     //   "http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/events/401437952/competitions/401437952/competitors/8/score?lang=en&region=us",{ cache: 'no-store' }
+//     // );
 
-    //     if(schedule.data.season.name ==='Off Season')
-    //     {
-    //         offSeason = true;
-    //     }
+//     // console.log("schedule.data", schedule.data);
 
-    // console.log("result.data.events length", result.data.events.length);
-    // console.log("schedule.data.events", schedule.data.events);
-    let scheduleLength = schedule.data.events.length;
-    //full event
+//     //     if(schedule.data.season.name ==='Off Season')
+//     //     {
+//     //         offSeason = true;
+//     //     }
+
+//     // console.log("result.data.events length", result.data.events.length);
+//     // console.log("schedule.data.events", schedule.data.events);
+    let scheduleLength = schedule.events.length;
+//     //full event
     // console.log(
-    //     "schedule.data.events[scheduleLength]",
-    //     schedule.data.events[scheduleLength - 1]
+    //     "schedule.events[scheduleLength]",
+    //     schedule.events[scheduleLength - 1]
     // );
 
-    // console.log(
-    //     "schedule.data.events[scheduleLength].name",
-    //     schedule.data.events[scheduleLength - 1].name
-    // );
+//     // console.log(
+//     //     "schedule.data.events[scheduleLength].name",
+//     //     schedule.data.events[scheduleLength - 1].name
+//     // );
 
-    //sget todays date
+//     //sget todays date
     let date = new Date();
 
-    //find the latestGame
+//     //find the latestGame
     let latestGameIndex = 16; //default to last game
-    schedule.data.events.forEach((event: any ,index: number)=>{
+    schedule.events.forEach((event: any ,index: number)=>{
         if(Date.parse(event.date) < date.getTime())
         {
             latestGameIndex = index;
@@ -151,21 +160,21 @@ async function getLatestGame() {
     })
     console.log('latestGame - ',latestGameIndex);
 
-    game.name = schedule.data.events[latestGameIndex].name;
-    game.date = schedule.data.events[latestGameIndex].date;
+    game.name = schedule.events[latestGameIndex].name;
+    game.date = schedule.events[latestGameIndex].date;
 
-    //old
-    // game.name = schedule.data.events[scheduleLength - 1].name;
-    // game.date = schedule.data.events[scheduleLength - 1].date;
+//     //old
+//     // game.name = schedule.data.events[scheduleLength - 1].name;
+//     // game.date = schedule.data.events[scheduleLength - 1].date;
 
-    let latestGameId = schedule.data.events[latestGameIndex].id;
-    //old
-    // let latestGameId = schedule.data.events[scheduleLength - 1].id;
+    let latestGameId = schedule.events[latestGameIndex].id;
+//     //old
+//     // let latestGameId = schedule.data.events[scheduleLength - 1].id;
+    let latestGame = await getLatestGame(latestGameId);
 
-    let latestGame = await axios.get(scoreboardUrl + "/" + latestGameId);
-    // console.log("latestGame", latestGame);
-    let competitors = latestGame.data.competitions[0].competitors;
-    //find the team and result
+//     // console.log("latestGame", latestGame);
+    let competitors = latestGame.competitions[0].competitors;
+//     //find the team and result
     competitors.forEach((competitor: any) => {
         // console.log("competitor", competitor);
 
@@ -174,10 +183,10 @@ async function getLatestGame() {
         }
     });
 
-    //update game object
+//     //update game object
     game.result = result;
     console.log('returning game: ', game);
-    // game.date = new Date(game.date).toString();
+//     // game.date = new Date(game.date).toString();
 
     let myTimezone = "America/New_York";
     let myDatetimeFormat= "YYYY-MM-DD hh:mm:ss a z";
@@ -187,11 +196,18 @@ async function getLatestGame() {
 }
 
 async function checkOffSeason() {
-    let schedule = await axios.get(
-        "https://site.api.espn.com/apis/site/v2/sports/football/nfl/teams/8/schedule"
+    let schedule = await fetch(
+        "https://site.api.espn.com/apis/site/v2/sports/football/nfl/teams/8/schedule",{ cache: 'no-store' }
     );
 
-    // console.log("schedule.data", schedule.data);
+    // return schedule.data.season.name === 'Off Season' ? true : false;
+    // return false;
+    return schedule.json();
+}
 
-    return schedule.data.season.name === 'Off Season' ? true : false;
+async function getLatestGame(id: string) {
+    let scoreboardUrl = "https://sports.core.api.espn.com/v2/sports/football/leagues/nfl/events";
+    let latestGame = await fetch(scoreboardUrl + "/" + id,{ cache: 'no-store' });
+
+    return latestGame.json();
 }

@@ -2,7 +2,7 @@ import styles from "@/styles/Home.module.css";
 import { cache, Suspense } from "react";
 import { RingLoader } from "react-spinners";
 
-const axios = require("axios");
+ 
 //lions team id = 8
 const LIONSID = "8";
 
@@ -15,76 +15,76 @@ interface Game {
 async function testFunction() {
     console.log('testing function')
 
-    console.log("checking result");
+    // console.log("checking result");
 
-    let game: any = {};
-    let result = false; //initial to loser
+    // let game: any = {};
+    // let result = false; //initial to loser
 
-    let schedule = await axios.get(
-        "https://site.api.espn.com/apis/site/v2/sports/football/nfl/teams/8/schedule"
-    );
-
-    let scoreboardUrl =
-        "https://sports.core.api.espn.com/v2/sports/football/leagues/nfl/events";
-
-    // let gameScore = await axios.get(
-    //   "http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/events/401437952/competitions/401437952/competitors/8/score?lang=en&region=us"
+    // let schedule = await fetch(
+    //     "https://site.api.espn.com/apis/site/v2/sports/football/nfl/teams/8/schedule",{ cache: 'no-store' }
     // );
 
-    // console.log("result.data", result.data);
-    // console.log("result.data.events length", result.data.events.length);
-    console.log("schedule.data.events", schedule.data.events);
-    let scheduleLength = schedule.data.events.length;
-    //full event
-    console.log(
-        "schedule.data.events[scheduleLength]",
-        schedule.data.events[scheduleLength - 1]
-    );
+    // let scoreboardUrl =
+    //     "https://sports.core.api.espn.com/v2/sports/football/leagues/nfl/events";
 
-    console.log(
-        "schedule.data.events[scheduleLength].name",
-        schedule.data.events[scheduleLength - 1].name
-    );
+    // // let gameScore = await fetch(
+    // //   "http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/events/401437952/competitions/401437952/competitors/8/score?lang=en&region=us",{ cache: 'no-store' }
+    // // );
 
-    game.name = schedule.data.events[scheduleLength - 1].name;
-    game.date = schedule.data.events[scheduleLength - 1].date;
+    // // console.log("result.data", result.data);
+    // // console.log("result.data.events length", result.data.events.length);
+    // console.log("schedule.data.events", schedule.data.events);
+    // let scheduleLength = schedule.data.events.length;
+    // //full event
+    // console.log(
+    //     "schedule.data.events[scheduleLength]",
+    //     schedule.data.events[scheduleLength - 1]
+    // );
 
-    let latestGameId = schedule.data.events[scheduleLength - 1].id;
+    // console.log(
+    //     "schedule.data.events[scheduleLength].name",
+    //     schedule.data.events[scheduleLength - 1].name
+    // );
 
-    let latestGame = await axios.get(scoreboardUrl + "/" + latestGameId);
-    // console.log("latestGame", latestGame);
-    let competitors = latestGame.data.competitions[0].competitors;
-    //find the team and result
-    competitors.forEach((competitor: any) => {
-        // console.log("competitor", competitor);
+    // game.name = schedule.data.events[scheduleLength - 1].name;
+    // game.date = schedule.data.events[scheduleLength - 1].date;
 
-        if (competitor.id === LIONSID) {
-            result = competitor.winner;
-        }
-    });
+    // let latestGameId = schedule.data.events[scheduleLength - 1].id;
 
-    //update game object
-    game.result = result;
-    console.log('returning game: ', game);
-    return game;
+    // let latestGame = await fetch(scoreboardUrl + "/" + latestGameId ,{ cache: 'no-store' });
+    // // console.log("latestGame", latestGame);
+    // let competitors = latestGame.data.competitions[0].competitors;
+    // //find the team and result
+    // competitors.forEach((competitor: any) => {
+    //     // console.log("competitor", competitor);
+
+    //     if (competitor.id === LIONSID) {
+    //         result = competitor.winner;
+    //     }
+    // });
+
+    // //update game object
+    // game.result = result;
+    // console.log('returning game: ', game);
+    // return game;
 
     // console.log('returning game: ', game);
 
 }
 
 
-const GetLatestCondition = async () => {
-    const prev = await testFunction();
+// const GetLatestCondition = async () => {
+//     const prev = await testFunction();
 
-    return (
-        <div>
-            <p>{prev.name}</p>
-            <p>{prev.date}</p>
-            <p>{prev.result}</p>
-        </div>
-    )
-    // <p>{condition}</p>);
-};
+//     return (
+//         <div>
+//             <p>{prev.name}</p>
+//             <p>{prev.date}</p>
+//             <p>{prev.result}</p>
+//         </div>
+//     )
+//     // <p>{condition}</p>);
+// };
 
 // export const LatestCondition = () => (
 //     <div className={styles.pitch}>
