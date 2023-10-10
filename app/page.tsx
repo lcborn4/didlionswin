@@ -25,6 +25,8 @@ interface Game {
 
 export default async function Home() {
 
+    const timestamp = (await getData()).toString();
+    console.log('timestamp',timestamp.toString());
     let game = await getLatestGame();
     let gameResult = game.result;
     console.log('gameResult', gameResult)
@@ -66,6 +68,7 @@ export default async function Home() {
                     <Facts {...game} />
 
                     <div className={styles.grid}>
+                        {timestamp}
                         <div>
                             <PrevCondition />
                         </div>
@@ -82,6 +85,17 @@ export default async function Home() {
         );
     }
 }
+
+
+
+async function getData() {
+    const res = await fetch("https://site.api.espn.com/apis/site/v2/sports/football/nfl/teams/8/schedule");
+    // The return value is *not* serialized
+    // You can return Date, Map, Set, etc.
+    const timestamp = new Date();
+    // return res.json();
+    return timestamp;
+  }
 
 async function getLatestGame() {
     console.log('testing function')
