@@ -5,7 +5,7 @@ import { Inter } from "@next/font/google";
 
 import moment from "moment-timezone";
 
-const axios = require("axios");
+ 
 //lions team id = 8
 const LIONSID = "8";
 const SCHEDULEMAXLENGTH = 18;
@@ -23,21 +23,20 @@ async function getPrevGame() {
     let game: any = {};
     let result = false; //initial to loser
 
-    let schedule = await axios.get(
-        "https://site.api.espn.com/apis/site/v2/sports/football/nfl/teams/8/schedule"
-    );
+    let schedule = await getSchedule();
+    console.log('schedule',schedule)
 
     let scoreboardUrl =
         "https://sports.core.api.espn.com/v2/sports/football/leagues/nfl/events";
 
-    // let gameScore = await axios.get(
-    //   "http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/events/401437952/competitions/401437952/competitors/8/score?lang=en&region=us"
+    // let gameScore = await fetch(
+    //   "http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/events/401437952/competitions/401437952/competitors/8/score?lang=en&region=us",{ cache: 'no-store' }
     // );
 
     // console.log("result.data", result.data);
     // console.log("result.data.events length", result.data.events.length);
     // console.log("schedule.data.events", schedule.data.events);
-    let scheduleLength = schedule.data.events.length;
+    let scheduleLength = schedule.events.length;
     //full event
     // console.log(
     //     "schedule.data.events[scheduleLength-1]",
@@ -72,7 +71,7 @@ async function getPrevGame() {
 
     //find the latestGame
     let latestGameIndex = 16; //default to last game
-    schedule.data.events.forEach((event: any ,index: number)=>{
+    schedule.events.forEach((event: any ,index: number)=>{
         if(Date.parse(event.date) < date.getTime())
         {
             latestGameIndex = index;
@@ -88,20 +87,20 @@ async function getPrevGame() {
     // game.date = schedule.data.events[latestGameIndex].date;
 
 
-    game.name = schedule.data.events[latestGameIndex].name;
-    game.date = schedule.data.events[latestGameIndex].date;
+    game.name = schedule.events[latestGameIndex].name;
+    game.date = schedule.events[latestGameIndex].date;
 
     //old
     // game.name = schedule.data.events[scheduleLength - 1].name;
     // game.date = schedule.data.events[scheduleLength - 1].date;
 
-    let latestGameId = schedule.data.events[latestGameIndex].id;
+    let latestGameId = schedule.events[latestGameIndex].id;
     //old
     // let latestGameId = schedule.data.events[scheduleLength - 1].id;
 
-    let latestGame = await axios.get(scoreboardUrl + "/" + latestGameId);
+    let latestGame = await getLatestGame(latestGameId);
     // console.log("latestGame.data", latestGame.data);
-    let competitors = latestGame.data.competitions[0].competitors;
+    let competitors = latestGame.competitions[0].competitors;
     let previousCompetition = null;
     //find the team and result
     competitors.forEach((competitor: any) => {
@@ -119,15 +118,15 @@ async function getPrevGame() {
     if (previousCompetition) {
         let prevGameUrl = previousCompetition['$ref']
         // console.log('prevGameUrl', prevGameUrl)
-        let previousGameResult = await axios(prevGameUrl);
+        let previousGameResult = await getPreviousGameResult(prevGameUrl);
         // console.log('previousGameResult.data', previousGameResult.data);
-        let prevGameId = previousGameResult.data.id;
+        let prevGameId = previousGameResult.id;
         // console.log('prevGameId', prevGameId)
-        let prevGame = await axios.get(scoreboardUrl + "/" + prevGameId);
+        let prevGame = await getPreviousGame(prevGameId)
         // console.log('prevGame.Data', prevGame.data);
-        game.name = prevGame.data.name;
-        game.date = prevGame.data.date;
-        let prevCompetitors = previousGameResult.data.competitors;
+        game.name = prevGame.name;
+        game.date = prevGame.date;
+        let prevCompetitors = previousGameResult.competitors;
         //loop through until lions
         prevCompetitors.forEach((competitor: any) => {
             // console.log("competitor", competitor);
@@ -197,6 +196,9 @@ const GetPrevCondition = async () => {
             <p>{prev.result ? 'WIN' : 'LOSS'}</p>
         </div>
     )
+    // return (
+    //     <div>prev</div>
+    // )
     // <p>{condition}</p>);
 };
 
@@ -219,3 +221,33 @@ export const PrevCondition = () => (
 //         </div>
 //     </div>
 // );
+
+
+async function getSchedule()
+{
+        let res = await fetch(
+        "https://site.api.espn.com/apis/site/v2/sports/football/nfl/teams/8/schedule",{ cache: 'no-store' }
+    );
+
+    return res.json();
+}
+
+async function getLatestGame(id: string) {
+    let scoreboardUrl = "https://sports.core.api.espn.com/v2/sports/football/leagues/nfl/events";
+    let res = await fetch(scoreboardUrl + "/" + id,{ cache: 'no-store' });
+
+    return res.json();
+}
+
+async function getPreviousGameResult(prevGameUrl: string) {
+    let res = await fetch(prevGameUrl ,{ cache: 'no-store' });
+
+    return res.json();
+}
+
+async function getPreviousGame(id: string) {
+    let scoreboardUrl = "https://sports.core.api.espn.com/v2/sports/football/leagues/nfl/events";
+    let res = await fetch(scoreboardUrl + "/" + id,{ cache: 'no-store' });
+
+    return res.json();
+}

@@ -13,7 +13,6 @@ import goodFacts from '../assets/good_facts.json';
 
 import mountains from '../public/images/bad/bearsthanksgiving2021.jpeg';
 
-const axios = require("axios");
 //lions team id = 8
 const LIONSID = "8";
 
