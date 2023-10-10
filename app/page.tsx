@@ -89,7 +89,7 @@ export default async function Home() {
 
 
 async function getData() {
-    const res = await fetch("https://site.api.espn.com/apis/site/v2/sports/football/nfl/teams/8/schedule");
+    const res = await fetch("https://site.api.espn.com/apis/site/v2/sports/football/nfl/teams/8/schedule",{ cache: 'no-store' });
     // The return value is *not* serialized
     // You can return Date, Map, Set, etc.
     const timestamp = new Date();
