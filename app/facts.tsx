@@ -11,11 +11,6 @@ import goodImages from '../assets/good_images.json';
 import badFacts from '../assets/bad_facts.json';
 import goodFacts from '../assets/good_facts.json';
 
-import mountains from '../public/images/bad/bearsthanksgiving2021.jpeg';
-
-//lions team id = 8
-const LIONSID = "8";
-
 const BADIMAGEMAXNUM = 5;//5 images 
 const GOODIMAGEMAXNUM = 3;//3images 
 const GOODFACTMAXNUM = 10;//10 quotes
@@ -29,7 +24,6 @@ interface Game {
 
 export const Facts = (game: Game) => (
     <div>
-        {/* <div>Game Result: {game.result}</div> */}
         <Suspense fallback={<RingLoader color="blue" loading />}>
             {/* @ts-expect-error Server Component */}
             <Fact {...game} />
@@ -39,11 +33,7 @@ export const Facts = (game: Game) => (
 
 const Fact = async (game: Game) => {
 
-    console.log('Inside Fact', game)
-
-    console.log(game.result ? 'WON' : 'LOST')
     let gameResult: boolean = game.result;
-    // gameResult = false;
 
     // random image
 
@@ -52,13 +42,11 @@ const Fact = async (game: Game) => {
 
     if (!gameResult) {
         let randomImageNum = getRandomInt(BADIMAGEMAXNUM);
-        console.log('badImages[randomImageNum].image', badImages[randomImageNum].image)
         // bad images
         randomImage = badImages[randomImageNum].image;
     }
     else {
         //good images
-        console.log('goodImages[randomImageNum].image', goodImages[randomImageNum].image)
         randomImage = goodImages[randomImageNum].image;
     }
 
@@ -75,9 +63,6 @@ const Fact = async (game: Game) => {
     else {
         fact = goodFacts[randomFactNum].fact;
     }
-
-    console.log('random image num', randomImageNum);
-    console.log('random fact num', randomFactNum)
 
     return (
 
