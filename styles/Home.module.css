@@ -39,6 +39,10 @@
   justify-content: center;
 }
 
+.didyouknow {
+  font-weight: bold;
+}
+
 .code {
   font-weight: 700;
   font-family: var(--font-mono);

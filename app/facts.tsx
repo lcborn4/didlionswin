@@ -81,7 +81,7 @@ const Fact = async (game: Game) => {
                 }}
             />
             </div>
-            <p>{fact}</p>
+            <p><span className={styles.didyouknow}>Did you know? </span>{fact}</p>
         </div>);
 };
 
