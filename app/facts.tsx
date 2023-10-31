@@ -51,9 +51,9 @@ const Fact = async (game: Game) => {
     }
 
     //roar
-    // randomImage = './images/aslan-roar.gif';
+    randomImage = './images/aslan-roar.gif';
     //kitty
-    randomImage = './images/kitty-cat.gif';
+    // randomImage = './images/kitty-cat.gif';
 
     // random fact
     //default with good images
