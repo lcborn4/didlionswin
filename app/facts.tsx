@@ -51,9 +51,11 @@ const Fact = async (game: Game) => {
     }
 
     //roar
-    randomImage = './images/aslan-roar.gif';
+    // randomImage = './images/aslan-roar.gif';
     //kitty
     // randomImage = './images/kitty-cat.gif';
+    //punt
+    randomImage = './images/out.gif';
 
     // random fact
     //default with good images
@@ -72,16 +74,16 @@ const Fact = async (game: Game) => {
 
         <div>
             <div className={styles.randomimage}>
-            <Image
-                alt="Bad"
-                src={randomImage}
-                width={200}
-                height={200}
-                sizes="100vw"
-                style={{
-                    objectFit: 'cover',
-                }}
-            />
+                <Image
+                    alt="Bad"
+                    src={randomImage}
+                    width={200}
+                    height={200}
+                    sizes="100vw"
+                    style={{
+                        objectFit: 'cover',
+                    }}
+                />
             </div>
             <p><span className={styles.didyouknow}>Did you know? </span>{fact}</p>
         </div>);
