@@ -20,7 +20,6 @@ interface Game {
     result: boolean
 }
 
-//kick off push
 export default async function Home() {
 
     let game = await checkLatestGame();

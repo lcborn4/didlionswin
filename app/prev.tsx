@@ -23,14 +23,13 @@ async function getPrevGame() {
 
     let schedule = await getSchedule();
 
-    //sget todays date
+    //get todays date
     let date = new Date();
 
     //find the latestGame
     let latestGameIndex = 16; //default to last game
-    schedule.events.forEach((event: any ,index: number)=>{
-        if(Date.parse(event.date) < date.getTime())
-        {
+    schedule.events.forEach((event: any, index: number) => {
+        if (Date.parse(event.date) < date.getTime()) {
             latestGameIndex = index;
 
         }
@@ -78,7 +77,7 @@ async function getPrevGame() {
     game.result = result;
 
     let myTimezone = "America/New_York";
-    let myDatetimeFormat= "YYYY-MM-DD hh:mm:ss a z";
+    let myDatetimeFormat = "YYYY-MM-DD hh:mm:ss a z";
     game.date = moment(new Date(game.date)).tz(myTimezone).format(myDatetimeFormat);
 
     return game;
@@ -120,10 +119,9 @@ export const PrevCondition = () => (
     </div>
 );
 
-async function getSchedule()
-{
-        let res = await fetch(
-        "https://site.api.espn.com/apis/site/v2/sports/football/nfl/teams/8/schedule",{ cache: 'no-store' }
+async function getSchedule() {
+    let res = await fetch(
+        "https://site.api.espn.com/apis/site/v2/sports/football/nfl/teams/8/schedule", { cache: 'no-store' }
     );
 
     return res.json();
@@ -131,20 +129,20 @@ async function getSchedule()
 
 async function getLatestGame(id: string) {
     let scoreboardUrl = "https://sports.core.api.espn.com/v2/sports/football/leagues/nfl/events";
-    let res = await fetch(scoreboardUrl + "/" + id,{ cache: 'no-store' });
+    let res = await fetch(scoreboardUrl + "/" + id, { cache: 'no-store' });
 
     return res.json();
 }
 
 async function getPreviousGameResult(prevGameUrl: string) {
-    let res = await fetch(prevGameUrl ,{ cache: 'no-store' });
+    let res = await fetch(prevGameUrl, { cache: 'no-store' });
 
     return res.json();
 }
 
 async function getPreviousGame(id: string) {
     let scoreboardUrl = "https://sports.core.api.espn.com/v2/sports/football/leagues/nfl/events";
-    let res = await fetch(scoreboardUrl + "/" + id,{ cache: 'no-store' });
+    let res = await fetch(scoreboardUrl + "/" + id, { cache: 'no-store' });
 
     return res.json();
 }
