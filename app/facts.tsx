@@ -37,7 +37,7 @@ const Fact = async (game: Game) => {
 
     // random image
 
-    let randomImageNum = getRandomInt(GOODIMAGEMAXNUM);
+    let randomImageNum = getRandomInt(2);
     let randomImage: string = '';
 
     if (!gameResult) {
@@ -47,7 +47,16 @@ const Fact = async (game: Game) => {
     }
     else {
         //good images
-        randomImage = goodImages[randomImageNum].image;
+        // randomImage = goodImages[randomImageNum].image;
+        console.log('randomImageNum', randomImageNum);
+        switch (randomImageNum) {
+            case 0:
+                randomImage = './images/out.gif';
+                break;
+            case 1:
+                randomImage = './images/IMG_1090.jpeg';
+                break;
+        }
     }
 
     //roar
@@ -55,7 +64,7 @@ const Fact = async (game: Game) => {
     //kitty
     // randomImage = './images/kitty-cat.gif';
     //punt
-    randomImage = './images/out.gif';
+    // randomImage = './images/out.gif';
 
     // random fact
     //default with good images
