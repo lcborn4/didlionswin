@@ -19,7 +19,7 @@ const BADFACTMAXNUM = 8;//8 quotes
 interface Game {
     name: string
     date: string
-    result: boolean
+    result: string
 }
 
 export const Facts = (game: Game) => (
@@ -33,17 +33,28 @@ export const Facts = (game: Game) => (
 
 const Fact = async (game: Game) => {
 
-    let gameResult: boolean = game.result;
+    let gameResult: string = game.result;
 
     // random image
 
     let randomImageNum = getRandomInt(2);
     let randomImage: string = '';
 
-    if (!gameResult) {
+    if (gameResult === 'LOSS') {
         let randomImageNum = getRandomInt(BADIMAGEMAXNUM);
         // bad images
         randomImage = badImages[randomImageNum].image;
+    }
+    else if (gameResult === 'In Progress') {
+
+        switch (randomImageNum) {
+            case 0:
+                randomImage = './images/out.gif';
+                break;
+            case 1:
+                randomImage = './images/IMG_1090.jpeg';
+
+        }
     }
     else {
         //good images
@@ -84,7 +95,7 @@ const Fact = async (game: Game) => {
         <div>
             <div className={styles.randomimage}>
                 <Image
-                    alt="Bad"
+                    alt="Lions Image"
                     src={randomImage}
                     width={200}
                     height={200}

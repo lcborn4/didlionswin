@@ -116,8 +116,15 @@ async function checkLatestGame() {
         }
     });
 
-    //update game object
-    game.result = result;
+    if (!result) {
+        game.result = 'In Progress'
+    }
+    else {
+        //update game object
+        if (result === typeof Boolean) {
+            game.result = result === true ? 'WIN' : 'LOSS';
+        }
+    }
 
     let myTimezone = "America/New_York";
     let myDatetimeFormat = "YYYY-MM-DD hh:mm:ss a z";

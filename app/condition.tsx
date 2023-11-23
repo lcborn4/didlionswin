@@ -1,13 +1,31 @@
 interface Game {
     name: string
     date: string
-    result: boolean
+    result: string
 }
 
-export const Condition = (game: Game) => (
-    <div>
+export const Condition = (game: Game) => {
+
+    /// yes
+    //nope
+    let gameResult = '';
+    switch (game.result) {
+        case 'In Progress':
+            gameResult = 'In Progress';
+            break;
+        case 'WIN':
+            gameResult = 'Yes';
+            break;
+        case 'LOSS':
+            gameResult = 'Nope';
+            break;
+    }
+
+    return (
         <div>
-            <p>{game.result ? 'Yes' : 'Nope'}</p>
+            <div>
+                <p>{gameResult}</p>
+            </div>
         </div>
-    </div>
-);
+    )
+};
