@@ -91,7 +91,7 @@ async function getSchedule() {
 async function checkLatestGame() {
 
     let game: any = {};
-    let result = false; //initial to loser
+    let result = 'LOSS'; //initial to loser
 
     let schedule = await getSchedule();
 
@@ -118,6 +118,11 @@ async function checkLatestGame() {
 
     let teamTwoScoreUrl = latestGame.competitions[0].competitors[1].score['$ref'];
     let teamTwoScore = await getScore(teamTwoScoreUrl);
+    // console.log('latestGame - status', latestGame.competitions[0].status);
+    let latestGameStatusUrl = latestGame.competitions[0].status['$ref'];
+    let latestGameStatus = await getLatestGameStatus(latestGameStatusUrl);
+
+    // console.log('latestGameStatus', latestGameStatus)
 
     game.score = {
         teamOne: teamOneScore.value,
@@ -129,18 +134,17 @@ async function checkLatestGame() {
     competitors.forEach((competitor: any) => {
 
         if (competitor.id === LIONSID) {
-            result = competitor.winner;
+            console.log('competitor.winner', competitor.winner);
+            if (competitor.winner !== undefined) {
+                result = competitor.winner ? 'WIN' : 'LOSS';
+            }
+
         }
     });
-
-    if (!result) {
+    console.log('result', result)
+    game.result = result;
+    if (result === undefined) {
         game.result = 'In Progress'
-    }
-    else {
-        //update game object
-        if (result === typeof Boolean) {
-            game.result = result === true ? 'WIN' : 'LOSS';
-        }
     }
 
     let myTimezone = "America/New_York";
@@ -163,6 +167,12 @@ async function getLatestGame(id: string) {
     let latestGame = await fetch(scoreboardUrl + "/" + id, { cache: 'no-store' });
 
     return latestGame.json();
+}
+
+async function getLatestGameStatus(url: string) {
+    let latestGameStatus = await fetch(url, { cache: 'no-store' });
+
+    return latestGameStatus.json();
 }
 
 async function getScore(url: string) {
