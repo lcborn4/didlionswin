@@ -76,8 +76,7 @@ async function getPrevGame() {
 
         let teamOneScoreUrl = prevGame.competitions[0].competitors[0].score['$ref'];
         let teamOneScore = await getScore(teamOneScoreUrl);
-        console.log('teamOneScore', teamOneScore)
-        console.log('prevGame - status', prevGame.competitions[0].competitors[1].score);
+
         let teamTwoScoreUrl = prevGame.competitions[0].competitors[1].score['$ref'];
         let teamTwoScore = await getScore(teamTwoScoreUrl);
 

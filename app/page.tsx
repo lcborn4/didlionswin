@@ -112,21 +112,12 @@ async function checkLatestGame() {
 
     let latestGameId = schedule.events[latestGameIndex].id;
     let latestGame = await getLatestGame(latestGameId);
-    // console.log('latestGame - status', latestGame.competitions[0]);
-    console.log('latestGame - status', latestGame.competitions[0].competitors[0].score);
 
     let teamOneScoreUrl = latestGame.competitions[0].competitors[0].score['$ref'];
     let teamOneScore = await getScore(teamOneScoreUrl);
-    console.log('teamOneScore', teamOneScore)
-    console.log('latestGame - status', latestGame.competitions[0].competitors[1].score);
+
     let teamTwoScoreUrl = latestGame.competitions[0].competitors[1].score['$ref'];
     let teamTwoScore = await getScore(teamTwoScoreUrl);
-    console.log('teamTwoScore', teamTwoScore)
-    // console.log('latestGame - status', latestGame.competitions[0].status);
-    // let latestGameStatusUrl = latestGame.competitions[0].status['$ref'];
-    // let latestGameStatus = await getLatestGameStatus(latestGameStatusUrl);
-
-    // console.log('latestGameStatus', latestGameStatus)
 
     game.score = {
         teamOne: teamOneScore.value,
@@ -172,12 +163,6 @@ async function getLatestGame(id: string) {
     let latestGame = await fetch(scoreboardUrl + "/" + id, { cache: 'no-store' });
 
     return latestGame.json();
-}
-
-async function getLatestGameStatus(url: string) {
-    let latestGameStatus = await fetch(url, { cache: 'no-store' });
-
-    return latestGameStatus.json();
 }
 
 async function getScore(url: string) {
