@@ -16,6 +16,11 @@ interface Game {
     result: boolean
 }
 
+interface Score {
+    teamOne: string,
+    teamTwo: string
+}
+
 async function getPrevGame() {
 
     let game: any = {};
@@ -69,6 +74,18 @@ async function getPrevGame() {
             }
         });
 
+        let teamOneScoreUrl = prevGame.competitions[0].competitors[0].score['$ref'];
+        let teamOneScore = await getScore(teamOneScoreUrl);
+        console.log('teamOneScore', teamOneScore)
+        console.log('prevGame - status', prevGame.competitions[0].competitors[1].score);
+        let teamTwoScoreUrl = prevGame.competitions[0].competitors[1].score['$ref'];
+        let teamTwoScore = await getScore(teamTwoScoreUrl);
+
+        game.score = {
+            teamOne: teamOneScore.value,
+            teamTwo: teamTwoScore.value
+        }
+
     }
     else {
         game.name = 'NO GAME'
@@ -105,6 +122,7 @@ const GetPrevCondition = async () => {
             <h2>Previous Game</h2>
             <p>{prev.name}</p>
             <p>{prev.date}</p>
+            <p>{prev.score.teamTwo} - {prev.score.teamOne}</p>
             <p>{prev.result ? 'WIN' : 'LOSS'}</p>
         </div>
     )
@@ -145,4 +163,10 @@ async function getPreviousGame(id: string) {
     let res = await fetch(scoreboardUrl + "/" + id, { cache: 'no-store' });
 
     return res.json();
+}
+
+async function getScore(url: string) {
+    let score = await fetch(url, { cache: 'no-store' });
+
+    return score.json();
 }
