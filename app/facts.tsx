@@ -37,7 +37,7 @@ const Fact = async (game: Game) => {
 
     // random image
 
-    let randomImageNum = getRandomInt(2);
+    let randomImageNum = getRandomInt(3);
     let randomImage: string = '';
 
     if (gameResult === 'LOSS') {
@@ -67,8 +67,13 @@ const Fact = async (game: Game) => {
             case 1:
                 randomImage = './images/IMG_1090.jpeg';
                 break;
+            case 2:
+                randomImage = './images/koolaid_lions.jpeg';
+                break;
         }
     }
+
+    randomImage = './images/koolaid_lions.jpeg';
 
     //roar
     // randomImage = './images/aslan-roar.gif';
