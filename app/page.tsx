@@ -17,7 +17,7 @@ const LIONSID = "8";
 interface Game {
     name: string
     date: string
-    result: boolean
+    result: string
     score: Score
 }
 
@@ -91,7 +91,7 @@ async function getSchedule() {
 async function checkLatestGame() {
 
     let game: any = {};
-    let result = 'LOSS'; //initial to loser
+    let result = ''; //initial to loser
 
     let schedule = await getSchedule();
 
@@ -130,23 +130,22 @@ async function checkLatestGame() {
     }
 
     let competitors = latestGame.competitions[0].competitors;
-    //     //find the team and result
+    //find the team and result
     competitors.forEach((competitor: any) => {
 
         if (competitor.id === LIONSID) {
-            console.log('competitor.winner', competitor.winner);
             if (competitor.winner !== undefined) {
                 result = competitor.winner ? 'WIN' : 'LOSS';
             }
 
         }
     });
-    console.log('result', result)
     game.result = result;
-    if (result === undefined) {
+    if (result === '') {
+        console.log('game is in progress')
         game.result = 'In Progress'
     }
-
+    console.log('game', game);
     let myTimezone = "America/New_York";
     let myDatetimeFormat = "YYYY-MM-DD hh:mm:ss a z";
     game.date = moment(new Date(game.date)).tz(myTimezone).format(myDatetimeFormat);

@@ -13,7 +13,7 @@ const inter = Inter({ subsets: ['latin'] })
 interface Game {
     name: string
     date: string
-    result: boolean
+    result: string
 }
 
 interface Score {

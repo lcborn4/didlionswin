@@ -3,18 +3,18 @@ import { cache, Suspense } from "react";
 import { RingLoader } from "react-spinners";
 import moment from "moment-timezone";
 
- 
+
 //lions team id = 8
 const LIONSID = "8";
 
 interface Game {
     name: string
     date: string
-    result: boolean
+    result: string
 }
 
 async function nextGame() {
-  
+
     let game: any = {};
     let result = false; //initial to loser
 
@@ -25,9 +25,8 @@ async function nextGame() {
 
     //find the latestGame
     let latestGameIndex = 16; //default to last game
-    schedule.events.forEach((event: any ,index: number)=>{
-        if(Date.parse(event.date) < date.getTime())
-        {
+    schedule.events.forEach((event: any, index: number) => {
+        if (Date.parse(event.date) < date.getTime()) {
             latestGameIndex = index;
 
         }
@@ -71,7 +70,7 @@ async function nextGame() {
     //update game object
     game.result = result;
     let myTimezone = "America/New_York";
-    let myDatetimeFormat= "YYYY-MM-DD hh:mm:ss a z";
+    let myDatetimeFormat = "YYYY-MM-DD hh:mm:ss a z";
     game.date = moment(new Date(game.date)).tz(myTimezone).format(myDatetimeFormat);
 
     return game;
@@ -106,10 +105,9 @@ export const NextCondition = () => (
     </div>
 );
 
-async function getSchedule()
-{
-        let res = await fetch(
-        "https://site.api.espn.com/apis/site/v2/sports/football/nfl/teams/8/schedule",{ cache: 'no-store' }
+async function getSchedule() {
+    let res = await fetch(
+        "https://site.api.espn.com/apis/site/v2/sports/football/nfl/teams/8/schedule", { cache: 'no-store' }
     );
 
     return res.json();
@@ -117,20 +115,20 @@ async function getSchedule()
 
 async function getLatestGame(id: string) {
     let scoreboardUrl = "https://sports.core.api.espn.com/v2/sports/football/leagues/nfl/events";
-    let res = await fetch(scoreboardUrl + "/" + id,{ cache: 'no-store' });
+    let res = await fetch(scoreboardUrl + "/" + id, { cache: 'no-store' });
 
     return res.json();
 }
 
 async function getNextGameResult(nextGameUrl: string) {
-    let res = await fetch(nextGameUrl ,{ cache: 'no-store' });
+    let res = await fetch(nextGameUrl, { cache: 'no-store' });
 
     return res.json();
 }
 
 async function getNextGame(id: string) {
     let scoreboardUrl = "https://sports.core.api.espn.com/v2/sports/football/leagues/nfl/events";
-    let res = await fetch(scoreboardUrl + "/" + id,{ cache: 'no-store' });
+    let res = await fetch(scoreboardUrl + "/" + id, { cache: 'no-store' });
 
     return res.json();
 }
