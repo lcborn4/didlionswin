@@ -20,7 +20,7 @@ async function nextGame() {
 
     let schedule = await getSchedule();
 
-    //sget todays date
+    //get todays date
     let date = new Date();
 
     //find the latestGame
