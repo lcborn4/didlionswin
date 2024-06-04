@@ -31,7 +31,8 @@ export default async function Home() {
 
     let game = await checkLatestGame();
     let season = await checkOffSeason();
-    let offSeason = season.name === 'Off Season' ? true : false;
+
+    let offSeason = season.season.name === 'Off Season' ? true : false;
 
     if (offSeason) {
         return (
@@ -122,7 +123,7 @@ async function checkLatestGame() {
     let latestGameStatusUrl = latestGame.competitions[0].status['$ref'];
     let latestGameStatus = await getLatestGameStatus(latestGameStatusUrl);
 
-    // console.log('latestGameStatus', latestGameStatus)
+    console.log('latestGameStatus', latestGameStatus)
 
     game.score = {
         teamOne: teamOneScore.value,
@@ -140,6 +141,7 @@ async function checkLatestGame() {
 
         }
     });
+
     game.result = result;
     if (result === '') {
         console.log('game is in progress')
