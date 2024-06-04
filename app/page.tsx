@@ -123,7 +123,7 @@ async function checkLatestGame() {
     let latestGameStatusUrl = latestGame.competitions[0].status['$ref'];
     let latestGameStatus = await getLatestGameStatus(latestGameStatusUrl);
 
-    console.log('latestGameStatus', latestGameStatus)
+    // console.log('latestGameStatus', latestGameStatus)
 
     game.score = {
         teamOne: teamOneScore.value,
@@ -147,7 +147,7 @@ async function checkLatestGame() {
         console.log('game is in progress')
         game.result = 'In Progress'
     }
-    console.log('game', game);
+    // console.log('game', game);
     let myTimezone = "America/New_York";
     let myDatetimeFormat = "YYYY-MM-DD hh:mm:ss a z";
     game.date = moment(new Date(game.date)).tz(myTimezone).format(myDatetimeFormat);
