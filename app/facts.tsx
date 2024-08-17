@@ -73,7 +73,7 @@ const Fact = async (game: Game) => {
         }
     }
 
-    randomImage = './images/koolaid_lions.jpeg';
+    randomImage = './images/IMG_8922.GIF';
 
     //roar
     // randomImage = './images/aslan-roar.gif';
