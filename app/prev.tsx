@@ -109,7 +109,6 @@ const GetPrevCondition = async () => {
             Previous Game
             <p>No Game</p>
             <h2 className={inter.className}>
-                Docs <span>-&gt;</span>
             </h2>
         </div>
         )
