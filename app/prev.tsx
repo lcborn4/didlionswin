@@ -31,70 +31,53 @@ async function getPrevGame() {
     //get todays date
     let date = new Date();
 
-    //find the latestGame
-    let latestGameIndex = 16; //default to last game
+    let previousGameIndex = 16;
     schedule.events.forEach((event: any, index: number) => {
         if (Date.parse(event.date) < date.getTime()) {
-            latestGameIndex = index;
-
+            previousGameIndex = index - 1;
         }
     })
 
-    game.name = schedule.events[latestGameIndex].name;
-    game.date = schedule.events[latestGameIndex].date;
+    game.name = schedule.events[previousGameIndex].name;
+    game.date = schedule.events[previousGameIndex].date;
 
-    let latestGameId = schedule.events[latestGameIndex].id;
+    let previousGameId = schedule.events[previousGameIndex].id;
 
-    let latestGame = await getLatestGame(latestGameId);
-    let competitors = latestGame.competitions[0].competitors;
-    let previousCompetition = null;
+    let previousGame = await getLatestGame(previousGameId);
+
+    let competitors = previousGame.competitions[0].competitors;
+
     //find the team and result
     competitors.forEach((competitor: any) => {
 
         if (competitor.id === LIONSID) {
             result = competitor.winner;
-            previousCompetition = competitor.previousCompetition;
         }
     });
 
-    //get the previous competition
-    if (previousCompetition) {
-        let prevGameUrl = previousCompetition['$ref']
-        let previousGameResult = await getPreviousGameResult(prevGameUrl);
-        let prevGameId = previousGameResult.id;
-        let prevGame = await getPreviousGame(prevGameId)
-        game.name = prevGame.name;
-        game.date = prevGame.date;
-        let prevCompetitors = previousGameResult.competitors;
-        //loop through until lions
-        prevCompetitors.forEach((competitor: any) => {
 
-            if (competitor.id === LIONSID) {
-                result = competitor.winner;
-            }
-        });
+    let teamOneScoreUrl = previousGame.competitions[0].competitors[0].score['$ref'];
+    let teamOneScore = await getScore(teamOneScoreUrl);
 
-        let teamOneScoreUrl = prevGame.competitions[0].competitors[0].score['$ref'];
-        let teamOneScore = await getScore(teamOneScoreUrl);
+    let teamTwoScoreUrl = previousGame.competitions[0].competitors[1].score['$ref'];
+    let teamTwoScore = await getScore(teamTwoScoreUrl);
 
-        let teamTwoScoreUrl = prevGame.competitions[0].competitors[1].score['$ref'];
-        let teamTwoScore = await getScore(teamTwoScoreUrl);
+    game.score = {
+        teamOne: teamOneScore.value,
+        teamTwo: teamTwoScore.value
+    }
 
-        game.score = {
-            teamOne: teamOneScore.value,
-            teamTwo: teamTwoScore.value
-        }
+    if (previousGameIndex > 0) {
+        //update game object
+        game.result = result;
 
+        let myTimezone = "America/New_York";
+        let myDatetimeFormat = "YYYY-MM-DD hh:mm:ss a z";
+        game.date = moment(new Date(game.date)).tz(myTimezone).format(myDatetimeFormat);
     }
     else {
         game.name = 'NO GAME'
     }
-    //update game object
-    game.result = result;
-
-    let myTimezone = "America/New_York";
-    let myDatetimeFormat = "YYYY-MM-DD hh:mm:ss a z";
-    game.date = moment(new Date(game.date)).tz(myTimezone).format(myDatetimeFormat);
 
     return game;
 
