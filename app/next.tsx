@@ -60,7 +60,7 @@ async function nextGame() {
     //     teamOne: teamOneScore.value,
     //     teamTwo: teamTwoScore.value
     // }
-    console.log('game', game)
+
     if (nextGameIndex <= 16) {
         //update game object
         game.result = result;
