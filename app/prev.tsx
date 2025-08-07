@@ -31,12 +31,21 @@ async function getPrevGame() {
     //get todays date
     let date = new Date();
 
-    let previousGameIndex = 16;
-    schedule.events.forEach((event: any, index: number) => {
-        if (Date.parse(event.date) < date.getTime()) {
-            previousGameIndex = index - 1;
+    let previousGameIndex = -1;
+    
+    // Find the most recent game that has already been played
+    for (let i = schedule.events.length - 1; i >= 0; i--) {
+        if (Date.parse(schedule.events[i].date) < date.getTime()) {
+            previousGameIndex = i;
+            break;
         }
-    })
+    }
+
+    // Check if we found a previous game
+    if (previousGameIndex === -1 || previousGameIndex >= schedule.events.length) {
+        game.name = 'NO GAME';
+        return game;
+    }
 
     game.name = schedule.events[previousGameIndex].name;
     game.date = schedule.events[previousGameIndex].date;
@@ -67,17 +76,12 @@ async function getPrevGame() {
         teamTwo: teamTwoScore.value
     }
 
-    if (previousGameIndex > 0) {
-        //update game object
-        game.result = result;
+    //update game object
+    game.result = result;
 
-        let myTimezone = "America/New_York";
-        let myDatetimeFormat = "YYYY-MM-DD hh:mm:ss a z";
-        game.date = moment(new Date(game.date)).tz(myTimezone).format(myDatetimeFormat);
-    }
-    else {
-        game.name = 'NO GAME'
-    }
+    let myTimezone = "America/New_York";
+    let myDatetimeFormat = "YYYY-MM-DD hh:mm:ss a z";
+    game.date = moment(new Date(game.date)).tz(myTimezone).format(myDatetimeFormat);
 
     return game;
 
