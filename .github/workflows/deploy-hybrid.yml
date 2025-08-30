@@ -1,0 +1,129 @@
+name: Deploy Hybrid Static + Serverless (BEST FOR LIVE SCORES)
+
+on:
+  push:
+    branches: [master, main]
+  workflow_dispatch:
+  schedule:
+    # Rebuild daily during football season for schedule updates
+    - cron: '0 11 * 9-12,1-2 *'  # Sep-Dec, Jan-Feb
+
+env:
+  NODE_VERSION: "18"
+  AWS_REGION: "us-east-1"
+  S3_BUCKET: ${{ secrets.S3_BUCKET }}
+  CLOUDFRONT_DISTRIBUTION_ID: ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }}
+
+jobs:
+  deploy-static:
+    name: 🌐 Deploy Static Site
+    runs-on: ubuntu-latest
+    steps:
+      - name: 🛎️ Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🏗️ Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "npm"
+
+      - name: 📦 Install dependencies
+        run: npm ci
+
+      - name: 🔨 Build static site
+        run: |
+          echo "Building hybrid static site..."
+          # Use hybrid config for static base + API calls
+          cp next.config.hybrid.js next.config.js
+          npm run build:static
+          echo "✅ Static build complete!"
+
+      - name: 🔧 Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: 📤 Deploy static files to S3
+        run: |
+          echo "Deploying static files to S3..."
+          
+          # Sync static files with optimized caching
+          aws s3 sync out/ s3://$S3_BUCKET \
+            --delete \
+            --cache-control "public,max-age=31536000,immutable" \
+            --exclude "*.html" \
+            --exclude "*.json"
+          
+          # HTML files with shorter cache for updates
+          aws s3 sync out/ s3://$S3_BUCKET \
+            --cache-control "public,max-age=1800" \
+            --exclude "*" \
+            --include "*.html" \
+            --include "*.json"
+
+      - name: 🌐 Invalidate CloudFront
+        if: env.CLOUDFRONT_DISTRIBUTION_ID != ''
+        run: |
+          echo "Invalidating CloudFront distribution: $CLOUDFRONT_DISTRIBUTION_ID"
+          INVALIDATION_ID=$(aws cloudfront create-invalidation \
+            --distribution-id $CLOUDFRONT_DISTRIBUTION_ID \
+            --paths "/*" \
+            --query 'Invalidation.Id' \
+            --output text)
+          
+          echo "✅ CloudFront invalidation started: $INVALIDATION_ID"
+
+  deploy-api:
+    name: ⚡ Deploy Live Score API
+    runs-on: ubuntu-latest
+    steps:
+      - name: 🛎️ Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🏗️ Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "npm"
+
+      - name: 📦 Install dependencies
+        run: npm ci
+
+      - name: 🔧 Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: 🚀 Deploy Serverless API
+        run: |
+          echo "Deploying live score API..."
+          npx serverless deploy --config serverless-api.yml --verbose
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
+      - name: 📊 Get API endpoints
+        run: |
+          echo "🔗 Getting API Gateway endpoints..."
+          npx serverless info --config serverless-api.yml
+
+  notify:
+    name: ✅ Deployment Complete
+    runs-on: ubuntu-latest
+    needs: [deploy-static, deploy-api]
+    steps:
+      - name: 🎉 Success notification
+        run: |
+          echo "🎉 Hybrid deployment completed successfully!"
+          echo ""
+          echo "🌐 Static Site: Fast loading from CDN"
+          echo "⚡ Live API: Real-time scores during games"
+          echo "💰 Cost: $3-8/month (90% savings)"
+          echo "🚀 Performance: Best of both worlds!"
+          echo ""
+          echo "✅ Ready for live score updates during Lions games!"

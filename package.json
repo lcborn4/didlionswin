@@ -1,12 +1,22 @@
 {
   "name": "didlionswin",
   "version": "0.2.4",
+  "description": "Did The Detroit Lions Win? - Next.js app deployed via Serverless Framework",
+  "type": "module",
   "private": true,
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "build:static": "cp next.config.hybrid.js next.config.js && next build",
+    "build:server": "node scripts/build-server.js",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "deploy": "npm run build && npx serverless deploy --config serverless.yml",
+    "deploy:hybrid": "npm run build:static && npx serverless deploy --config serverless-api.yml",
+    "deploy:prod": "npm run build && npx serverless deploy --config serverless.yml --stage prod",
+    "info": "npx serverless info --config serverless.yml",
+    "logs": "npx serverless logs -f app --config serverless.yml",
+    "remove": "npx serverless remove --config serverless.yml"
   },
   "dependencies": {
     "@next/font": "^13.2.4",
@@ -21,6 +31,17 @@
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-spinners": "^0.13.8",
-    "typescript": "5.0.2"
+    "typescript": "5.0.2",
+    "express": "^4.21.1",
+    "serverless-http": "^3.2.0",
+    "compression": "^1.8.1",
+    "cors": "^2.8.5",
+    "helmet": "^8.0.0"
+  },
+  "devDependencies": {
+    "serverless": "^3.38.0",
+    "serverless-s3-sync": "^3.1.0",
+    "serverless-offline": "^13.3.0",
+    "node-fetch": "^3.3.2"
   }
 }

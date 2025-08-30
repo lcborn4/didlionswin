@@ -1,0 +1,105 @@
+name: Deploy Static Site to S3 + CloudFront (CHEAPEST)
+
+on:
+  push:
+    branches: [master, main]
+  workflow_dispatch:
+  schedule:
+    # Rebuild daily at 6 AM EST (11 AM UTC) during football season
+    - cron: '0 11 * 9-12,1-2 *'  # Sep-Dec, Jan-Feb
+
+env:
+  NODE_VERSION: "18"
+  AWS_REGION: "us-east-1"
+  S3_BUCKET: "didlionswin-static"  # Change this to your bucket name
+  CLOUDFRONT_DISTRIBUTION_ID: ""  # Add your CloudFront distribution ID
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 🛎️ Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🏗️ Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "npm"
+
+      - name: 📦 Install dependencies
+        run: npm ci
+
+      - name: 🔨 Build static export
+        run: |
+          echo "Building static Next.js export..."
+          # Use static config for export
+          cp next.config.static.js next.config.js
+          npm run build
+          echo "✅ Static build complete!"
+          echo "📁 Output directory contents:"
+          ls -la out/
+
+      - name: 🔧 Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: 📤 Deploy to S3
+        run: |
+          echo "Deploying to S3 bucket: $S3_BUCKET"
+          
+          # Sync static files to S3 with proper caching headers
+          aws s3 sync out/ s3://$S3_BUCKET \
+            --delete \
+            --cache-control "public,max-age=31536000,immutable" \
+            --exclude "*.html" \
+            --exclude "*.json"
+          
+          # Upload HTML files with shorter cache (1 hour) for content updates
+          aws s3 sync out/ s3://$S3_BUCKET \
+            --cache-control "public,max-age=3600" \
+            --exclude "*" \
+            --include "*.html" \
+            --include "*.json"
+          
+          echo "✅ S3 deployment complete!"
+
+      - name: 🌐 Invalidate CloudFront cache
+        if: env.CLOUDFRONT_DISTRIBUTION_ID != ''
+        run: |
+          echo "Invalidating CloudFront distribution: $CLOUDFRONT_DISTRIBUTION_ID"
+          INVALIDATION_ID=$(aws cloudfront create-invalidation \
+            --distribution-id $CLOUDFRONT_DISTRIBUTION_ID \
+            --paths "/*" \
+            --query 'Invalidation.Id' \
+            --output text)
+          
+          echo "Invalidation ID: $INVALIDATION_ID"
+          echo "⏳ Waiting for invalidation to complete..."
+          
+          aws cloudfront wait invalidation-completed \
+            --distribution-id $CLOUDFRONT_DISTRIBUTION_ID \
+            --id $INVALIDATION_ID
+          
+          echo "✅ CloudFront cache invalidated!"
+
+      - name: 📊 Get deployment info
+        run: |
+          echo "🎉 Deployment Summary"
+          echo "===================="
+          echo "📁 Static files deployed to: s3://$S3_BUCKET"
+          echo "🌐 CloudFront distribution: $CLOUDFRONT_DISTRIBUTION_ID"
+          echo "💰 Estimated monthly cost: $1-5 (S3 + CloudFront)"
+          echo "⚡ Performance: Lightning fast (CDN)"
+          echo "🔄 Cache TTL: 1 hour for HTML, 1 year for assets"
+
+      - name: ✅ Deployment complete
+        run: |
+          echo "🎉 Static deployment completed successfully!"
+          echo "🌐 Your Did Lions Win app is now live!"
+          echo "💰 Cost: ~90% cheaper than serverless options"
+          echo "⚡ Performance: Faster than SSR with global CDN"

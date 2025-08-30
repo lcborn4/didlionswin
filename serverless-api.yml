@@ -1,0 +1,134 @@
+service: didlionswin-api
+frameworkVersion: '3'
+
+provider:
+  name: aws
+  runtime: nodejs18.x
+  region: us-east-1
+  stage: ${opt:stage, 'prod'}
+  environment:
+    NODE_ENV: production
+    ESPN_API_URL: 'https://sports.core.api.espn.com/v2/sports/football/leagues/nfl'
+    LIONS_TEAM_ID: '8'
+
+plugins:
+  - serverless-offline
+
+custom:
+  # Cost control settings
+  lambdaTimeout: 10  # 10 seconds max
+  lambdaMemorySize: 256  # Minimal memory for cost savings
+  
+  # CORS settings for frontend integration
+  corsSettings:
+    origin: '*'
+    headers:
+      - Content-Type
+      - X-Amz-Date
+      - Authorization
+      - X-Api-Key
+      - X-Amz-Security-Token
+      - X-Amz-User-Agent
+    allowCredentials: false
+
+functions:
+  # Live score API - only called during games
+  liveScore:
+    handler: api/live-score.handler
+    timeout: ${self:custom.lambdaTimeout}
+    memorySize: ${self:custom.lambdaMemorySize}
+    reservedConcurrency: 10  # Limit concurrent executions for cost control
+    events:
+      - httpApi:
+          path: /api/live-score
+          method: get
+          cors: ${self:custom.corsSettings}
+    environment:
+      CACHE_TTL: 60  # Cache for 60 seconds to reduce ESPN API calls
+
+  # Game status API - check if game is live
+  gameStatus:
+    handler: api/game-status.handler
+    timeout: ${self:custom.lambdaTimeout}
+    memorySize: ${self:custom.lambdaMemorySize}
+    reservedConcurrency: 5
+    events:
+      - httpApi:
+          path: /api/game-status
+          method: get
+          cors: ${self:custom.corsSettings}
+    environment:
+      CACHE_TTL: 300  # Cache for 5 minutes
+
+  # Health check endpoint
+  health:
+    handler: api/health.handler
+    timeout: 5
+    memorySize: 128
+    events:
+      - httpApi:
+          path: /api/health
+          method: get
+          cors: ${self:custom.corsSettings}
+
+resources:
+  Resources:
+    # CloudWatch alarm for cost monitoring
+    LambdaErrorAlarm:
+      Type: AWS::CloudWatch::Alarm
+      Properties:
+        AlarmName: 'DidLionsWin-Lambda-Errors'
+        AlarmDescription: 'Alert on Lambda function errors'
+        MetricName: Errors
+        Namespace: AWS/Lambda
+        Statistic: Sum
+        Period: 300  # 5 minutes
+        EvaluationPeriods: 2
+        Threshold: 10
+        ComparisonOperator: GreaterThanThreshold
+        Dimensions:
+          - Name: FunctionName
+            Value: 
+              Ref: LiveScoreLambdaFunction
+        TreatMissingData: notBreaching
+
+    # Billing alarm for cost control
+    BillingAlarm:
+      Type: AWS::CloudWatch::Alarm
+      Properties:
+        AlarmName: 'DidLionsWin-Cost-Alert'
+        AlarmDescription: 'Alert when AWS bill exceeds $20'
+        MetricName: EstimatedCharges
+        Namespace: AWS/Billing
+        Statistic: Maximum
+        Period: 86400  # 24 hours
+        EvaluationPeriods: 1
+        Threshold: 20  # $20 threshold
+        ComparisonOperator: GreaterThanThreshold
+        Dimensions:
+          - Name: Currency
+            Value: USD
+        TreatMissingData: notBreaching
+
+  Outputs:
+    ApiGatewayHttpApiUrl:
+      Value:
+        Fn::Join:
+          - ''
+          - - 'https://'
+            - Ref: HttpApi
+            - '.execute-api.'
+            - ${self:provider.region}
+            - '.amazonaws.com'
+      Description: 'Live Score API endpoint'
+    
+    LiveScoreEndpoint:
+      Value:
+        Fn::Join:
+          - ''
+          - - 'https://'
+            - Ref: HttpApi
+            - '.execute-api.'
+            - ${self:provider.region}
+            - '.amazonaws.com/api/live-score'
+      Description: 'Live score endpoint for frontend polling'
