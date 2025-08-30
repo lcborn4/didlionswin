@@ -82,7 +82,8 @@ export default async function Home() {
 }
 
 async function getSchedule() {
-    let res = await fetch(
+    const { safeFetch } = await import('./utils/safe-fetch');
+    let res = await safeFetch(
         "https://site.api.espn.com/apis/site/v2/sports/football/nfl/teams/8/schedule", { cache: 'no-store' }
     );
 
@@ -156,7 +157,8 @@ async function checkLatestGame() {
 }
 
 async function checkOffSeason() {
-    let schedule = await fetch(
+    const { safeFetch } = await import('./utils/safe-fetch');
+    let schedule = await safeFetch(
         "https://site.api.espn.com/apis/site/v2/sports/football/nfl/teams/8/schedule", { cache: 'no-store' }
     );
 
@@ -164,20 +166,23 @@ async function checkOffSeason() {
 }
 
 async function getLatestGame(id: string) {
+    const { safeFetch } = await import('./utils/safe-fetch');
     let scoreboardUrl = "https://sports.core.api.espn.com/v2/sports/football/leagues/nfl/events";
-    let latestGame = await fetch(scoreboardUrl + "/" + id, { cache: 'no-store' });
+    let latestGame = await safeFetch(scoreboardUrl + "/" + id, { cache: 'no-store' });
 
     return latestGame.json();
 }
 
 async function getLatestGameStatus(url: string) {
-    let latestGameStatus = await fetch(url, { cache: 'no-store' });
+    const { safeFetch } = await import('./utils/safe-fetch');
+    let latestGameStatus = await safeFetch(url, { cache: 'no-store' });
 
     return latestGameStatus.json();
 }
 
 async function getScore(url: string) {
-    let score = await fetch(url, { cache: 'no-store' });
+    const { safeFetch } = await import('./utils/safe-fetch');
+    let score = await safeFetch(url, { cache: 'no-store' });
 
     return score.json();
 }

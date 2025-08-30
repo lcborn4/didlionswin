@@ -18,22 +18,41 @@ async function nextGame() {
     let game: any = {};
     let result = false; //initial to loser
 
-    let schedule = await getSchedule();
+    try {
+        let schedule = await getSchedule();
 
-    //get todays date
-    let date = new Date();
-
-    let nextGameIndex = 16;
-    schedule.events.forEach((event: any, index: number) => {
-        if (Date.parse(event.date) < date.getTime()) {
-            if (index !== 16) {
-                nextGameIndex = index + 1;
-            }
+        // Safety check for schedule data
+        if (!schedule || !schedule.events || !Array.isArray(schedule.events) || schedule.events.length === 0) {
+            return {
+                name: 'NO GAME',
+                date: '',
+                result: ''
+            };
         }
-    })
 
-    game.name = schedule.events[nextGameIndex].name;
-    game.date = schedule.events[nextGameIndex].date;
+        //get todays date
+        let date = new Date();
+
+        let nextGameIndex = 16;
+        schedule.events.forEach((event: any, index: number) => {
+            if (Date.parse(event.date) < date.getTime()) {
+                if (index !== 16) {
+                    nextGameIndex = index + 1;
+                }
+            }
+        })
+
+        // Safety check for nextGameIndex
+        if (nextGameIndex >= schedule.events.length || !schedule.events[nextGameIndex]) {
+            return {
+                name: 'NO GAME',
+                date: '',
+                result: ''
+            };
+        }
+
+        game.name = schedule.events[nextGameIndex].name;
+        game.date = schedule.events[nextGameIndex].date;
 
     let nextGameId = schedule.events[nextGameIndex].id;
 
@@ -68,13 +87,21 @@ async function nextGame() {
         let myTimezone = "America/New_York";
         let myDatetimeFormat = "YYYY-MM-DD hh:mm:ss a z";
         game.date = moment(new Date(game.date)).tz(myTimezone).format(myDatetimeFormat);
-    }
-    else {
-        game.name = 'NO GAME'
-    }
+        }
+        else {
+            game.name = 'NO GAME'
+        }
 
-    return game;
+        return game;
 
+    } catch (error) {
+        console.warn('Error in nextGame:', error);
+        return {
+            name: 'NO GAME',
+            date: '',
+            result: ''
+        };
+    }
 }
 
 const GetNextCondition = async () => {
@@ -106,7 +133,8 @@ export const NextCondition = () => (
 );
 
 async function getSchedule() {
-    let res = await fetch(
+    const { safeFetch } = await import('./utils/safe-fetch');
+    let res = await safeFetch(
         "https://site.api.espn.com/apis/site/v2/sports/football/nfl/teams/8/schedule", { cache: 'no-store' }
     );
 
@@ -114,8 +142,9 @@ async function getSchedule() {
 }
 
 async function getLatestGame(id: string) {
+    const { safeFetch } = await import('./utils/safe-fetch');
     let scoreboardUrl = "https://sports.core.api.espn.com/v2/sports/football/leagues/nfl/events";
-    let res = await fetch(scoreboardUrl + "/" + id, { cache: 'no-store' });
+    let res = await safeFetch(scoreboardUrl + "/" + id, { cache: 'no-store' });
 
     return res.json();
 }
