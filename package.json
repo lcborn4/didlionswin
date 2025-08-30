@@ -7,12 +7,12 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "build:static": "cp next.config.hybrid.js next.config.js && next build",
+
     "build:server": "node scripts/build-server.js",
     "start": "next start",
     "lint": "next lint",
     "deploy": "npm run build && npx serverless deploy --config serverless.yml",
-    "deploy:hybrid": "npm run build:static && npx serverless deploy --config serverless-api.yml",
+    "deploy:hybrid": "npm run build && npx serverless deploy --config serverless-api.yml",
     "deploy:prod": "npm run build && npx serverless deploy --config serverless.yml --stage prod",
     "info": "npx serverless info --config serverless.yml",
     "logs": "npx serverless logs -f app --config serverless.yml",
