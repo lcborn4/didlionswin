@@ -14,22 +14,40 @@ provider:
 plugins:
   - serverless-offline
 
+package:
+  patterns:
+    - 'api/**'
+    - '!node_modules/**'
+    - '!.next/**'
+    - '!out/**'
+    - '!.git/**'
+    - '!Documentation/**'
+    - '!assets/**'
+    - '!public/**'
+    - '!styles/**'
+    - '!scripts/**'
+    - '!*.md'
+
 custom:
   # Cost control settings
   lambdaTimeout: 10  # 10 seconds max
   lambdaMemorySize: 256  # Minimal memory for cost savings
   
   # CORS settings for frontend integration
-  corsSettings:
-    origin: '*'
-    headers:
-      - Content-Type
-      - X-Amz-Date
-      - Authorization
-      - X-Api-Key
-      - X-Amz-Security-Token
-      - X-Amz-User-Agent
-    allowCredentials: false
+  httpApi:
+    cors:
+      allowedOrigins:
+        - '*'
+      allowedHeaders:
+        - Content-Type
+        - X-Amz-Date
+        - Authorization
+        - X-Api-Key
+        - X-Amz-Security-Token
+        - X-Amz-User-Agent
+      allowedMethods:
+        - GET
+        - OPTIONS
 
 functions:
   # Live score API - only called during games
@@ -42,7 +60,6 @@ functions:
       - httpApi:
           path: /api/live-score
           method: get
-          cors: ${self:custom.corsSettings}
     environment:
       CACHE_TTL: 60  # Cache for 60 seconds to reduce ESPN API calls
 
@@ -56,7 +73,6 @@ functions:
       - httpApi:
           path: /api/game-status
           method: get
-          cors: ${self:custom.corsSettings}
     environment:
       CACHE_TTL: 300  # Cache for 5 minutes
 
@@ -69,7 +85,6 @@ functions:
       - httpApi:
           path: /api/health
           method: get
-          cors: ${self:custom.corsSettings}
 
 resources:
   Resources:

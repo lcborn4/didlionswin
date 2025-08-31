@@ -1,5 +1,5 @@
 // Live Score API - Serverless function for real-time score updates
-import fetch from 'node-fetch';
+// Using built-in fetch (Node.js 18+)
 
 const LIONS_ID = '8';
 const ESPN_API_BASE = 'https://sports.core.api.espn.com/v2/sports/football/leagues/nfl';
