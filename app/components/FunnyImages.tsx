@@ -39,47 +39,13 @@ export default function FunnyImages({ gameResult, isLoading }: FunnyImagesProps)
     ];
 
     useEffect(() => {
-        if (isLoading) {
-            setCurrentImage(null);
-            return;
-        }
-
-        // Show out.gif until there's an actual game result this season
-        if (!gameResult || gameResult === null) {
+        // For now, just show out.gif until the Lions first game
+        if (!isLoading) {
             setCurrentImage('/images/good/out.gif');
             setImageAlt('Out');
-            console.log('No game result yet - showing out.gif');
-            return;
+            console.log('Showing out.gif until first game of season');
         }
-
-        let imagePool: typeof goodImages | typeof badImages;
-        let poolName: string;
-
-        if (gameResult === 'WIN') {
-            // Only show good images when they win
-            imagePool = goodImages;
-            poolName = 'good';
-        } else if (gameResult === 'LOSS') {
-            // Only show bad images when they lose
-            imagePool = badImages;
-            poolName = 'bad';
-        } else {
-            // This shouldn't happen now, but fallback to out.gif
-            setCurrentImage('/images/out.gif');
-            setImageAlt('Out');
-            console.log('Fallback to out.gif');
-            return;
-        }
-
-        // Select random image from the pool
-        const randomIndex = Math.floor(Math.random() * imagePool.length);
-        const selectedImage = imagePool[randomIndex];
-
-        setCurrentImage(selectedImage.src);
-        setImageAlt(selectedImage.alt);
-
-        console.log(`Selected ${poolName} image: ${selectedImage.src}`);
-    }, [gameResult, isLoading]);
+    }, [isLoading]);
 
     if (isLoading || !currentImage) {
         return null;
