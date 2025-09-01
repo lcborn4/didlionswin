@@ -60,23 +60,13 @@ export default function FunnyImages({ gameResult, isLoading }: FunnyImagesProps)
         let poolName: string;
 
         if (gameResult === 'WIN') {
-            // 70% chance of good image, 30% chance of random image
-            if (Math.random() < 0.7) {
-                imagePool = goodImages;
-                poolName = 'good';
-            } else {
-                imagePool = randomImages;
-                poolName = 'random';
-            }
+            // Only show good images when they win
+            imagePool = goodImages;
+            poolName = 'good';
         } else if (gameResult === 'LOSS') {
-            // 70% chance of bad image, 30% chance of random image
-            if (Math.random() < 0.7) {
-                imagePool = badImages;
-                poolName = 'bad';
-            } else {
-                imagePool = randomImages;
-                poolName = 'random';
-            }
+            // Only show bad images when they lose
+            imagePool = badImages;
+            poolName = 'bad';
         } else {
             // No game result, show random image (but we already handled out.gif above)
             imagePool = randomImages;
