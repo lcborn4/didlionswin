@@ -45,11 +45,11 @@ export default function FunnyImages({ gameResult, isLoading }: FunnyImagesProps)
             return;
         }
 
-        // On main page (no specific game result), always show out.gif
-        if (!gameResult) {
+        // Show out.gif until there's an actual game result this season
+        if (!gameResult || gameResult === null) {
             setCurrentImage('/images/out.gif');
             setImageAlt('Out');
-            console.log('Selected main page image: out.gif');
+            console.log('No game result yet - showing out.gif');
             return;
         }
 
