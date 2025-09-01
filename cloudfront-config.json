@@ -1,7 +1,8 @@
 {
     "CallerReference": "didlionswin-1725025800",
     "Aliases": {
-        "Quantity": 0
+        "Quantity": 1,
+        "Items": ["didthelionswin.com", "www.didthelionswin.com"]
     },
     "DefaultRootObject": "index.html",
     "Comment": "CloudFront distribution for didlionswin static site",

@@ -1,0 +1,30 @@
+{
+    "Changes": [
+        {
+            "Action": "UPSERT",
+            "ResourceRecordSet": {
+                "Name": "_751e6f5ed3dc7a2423c19b8b226e638d.didthelionswin.com",
+                "Type": "CNAME",
+                "TTL": 300,
+                "ResourceRecords": [
+                    {
+                        "Value": "_d6f51b01677c7367bf5383b82ea59a35.xlfgrmvvlj.acm-validations.aws"
+                    }
+                ]
+            }
+        },
+        {
+            "Action": "UPSERT",
+            "ResourceRecordSet": {
+                "Name": "_85585d8ed16eb3e32d31c5992a85468d.www.didthelionswin.com",
+                "Type": "CNAME",
+                "TTL": 300,
+                "ResourceRecords": [
+                    {
+                        "Value": "_f21e37b646c72e52e4d1b595249c91a2.xlfgrmvvlj.acm-validations.aws"
+                    }
+                ]
+            }
+        }
+    ]
+}
