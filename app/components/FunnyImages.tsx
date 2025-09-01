@@ -45,6 +45,17 @@ export default function FunnyImages({ gameResult, isLoading }: FunnyImagesProps)
             return;
         }
 
+        // On main page (no specific game result), prioritize out.gif
+        if (!gameResult) {
+            // 50% chance of out.gif, 50% chance of other random images
+            if (Math.random() < 0.5) {
+                setCurrentImage('/images/out.gif');
+                setImageAlt('Out');
+                console.log('Selected main page image: out.gif');
+                return;
+            }
+        }
+
         let imagePool: typeof goodImages | typeof badImages | typeof randomImages;
         let poolName: string;
 
@@ -67,7 +78,7 @@ export default function FunnyImages({ gameResult, isLoading }: FunnyImagesProps)
                 poolName = 'random';
             }
         } else {
-            // No game result, show random image
+            // No game result, show random image (but we already handled out.gif above)
             imagePool = randomImages;
             poolName = 'random';
         }
