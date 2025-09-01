@@ -54,8 +54,8 @@ export default function FunnyImages({ gameResult, isLoading }: FunnyImagesProps)
         if (!gameResult || gameResult === null) {
             setCurrentImage('/images/good/out.gif');
             setImageAlt('Out');
-            setCurrentFact('');
-            console.log('No game result yet - showing out.gif');
+            setCurrentFact(''); // No fact until season starts
+            console.log('No game result yet - showing out.gif (no fact)');
             return;
         }
 

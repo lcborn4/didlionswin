@@ -60,16 +60,16 @@ export default function ClientOnlyLionsData() {
                     console.warn('Schedule API failed, using fallback data:', scheduleError);
                     scheduleData = {
                         latestGame: {
-                            name: "Detroit Lions vs Houston Texans",
-                            score: { lions: 7, opponent: 26 },
-                            opponent: "Houston Texans",
-                            result: "LOSS"
+                            name: "Preseason 2024 - No current result",
+                            score: null,
+                            opponent: "Preseason",
+                            result: null
                         },
                         previousGame: {
-                            name: "Detroit Lions vs Miami Dolphins", 
-                            score: { lions: 26, opponent: 17 },
-                            opponent: "Miami Dolphins",
-                            result: "WIN"
+                            name: "Preseason 2024 - No current result", 
+                            score: null,
+                            opponent: "Preseason",
+                            result: null
                         },
                         nextGame: {
                             name: "Regular Season 2025",
@@ -85,15 +85,10 @@ export default function ClientOnlyLionsData() {
                     let scoreText = '';
                     let result: 'WIN' | 'LOSS' | 'TIE' | null = null;
                     
-                    console.log('Latest game check:', game.name, 'includes Texans?', game.name.includes('Houston Texans'));
+                    console.log('Latest game check:', game.name, 'result:', game.result);
                     
-                    // For Texans game, we know the score was Lions 7, Texans 26 (preseason loss)
-                    if (game.name.includes('Houston Texans')) {
-                        console.log('Setting Texans game score');
-                        emoji = '❌';
-                        scoreText = ' - Lions 7, Texans 26';
-                        result = 'LOSS';
-                    } else if (game.score && (game.score.lions > 0 || game.score.opponent > 0)) {
+                    // Only set result if there's an actual game result (not preseason)
+                    if (game.result && game.score && (game.score.lions > 0 || game.score.opponent > 0)) {
                         if (game.result === 'WIN') {
                             emoji = '✅';
                             result = 'WIN';
@@ -106,7 +101,10 @@ export default function ClientOnlyLionsData() {
                         }
                         scoreText = ` - Lions ${game.score.lions}, ${game.opponent} ${game.score.opponent}`;
                     } else {
-                        console.log('No score found for latest game:', game);
+                        console.log('No current game result - showing preseason status');
+                        emoji = '🏈';
+                        scoreText = '';
+                        result = null;
                     }
                     
                     setLatestGame(`${emoji} ${game.name}${scoreText}`);
