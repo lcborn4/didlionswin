@@ -16,7 +16,12 @@ export default function FunnyImages({ gameResult, isLoading }: FunnyImagesProps)
     const goodImages = [
         { src: '/images/good/lionswin.jpg', alt: 'Lions Win Celebration' },
         { src: '/images/good/hutchinson_sack.jpg', alt: 'Hutchinson Sack' },
-        { src: '/images/good/cook_fumble.jpg', alt: 'Cook Fumble Recovery' }
+        { src: '/images/good/cook_fumble.jpg', alt: 'Cook Fumble Recovery' },
+        { src: '/images/good/aslan-roar.gif', alt: 'Aslan Roar' },
+        { src: '/images/good/IMG_8922.GIF', alt: 'Lions GIF' },
+        { src: '/images/good/IMG_1090.jpeg', alt: 'Lions Image' },
+        { src: '/images/good/GdgB9HaWYAAP_BW.jpeg', alt: 'Lions Image' },
+        { src: '/images/good/GdgLgm5XcAAKXl0.jpeg', alt: 'Lions Image' }
     ];
 
     const badImages = [
@@ -24,19 +29,13 @@ export default function FunnyImages({ gameResult, isLoading }: FunnyImagesProps)
         { src: '/images/bad/lions_broncos.jpeg', alt: 'Lions Broncos Loss' },
         { src: '/images/bad/bearsthanksgiving2021.jpeg', alt: 'Bears Thanksgiving 2021' },
         { src: '/images/bad/dlwaf.jpg', alt: 'DLWAF' },
-        { src: '/images/bad/harrington.jpg', alt: 'Harrington' }
+        { src: '/images/bad/harrington.jpg', alt: 'Harrington' },
+        { src: '/images/bad/kitty-cat.gif', alt: 'Kitty Cat' }
     ];
 
     const randomImages = [
-        { src: '/images/aslan-roar.gif', alt: 'Aslan Roar' },
-        { src: '/images/kitty-cat.gif', alt: 'Kitty Cat' },
-        { src: '/images/out.gif', alt: 'Out' },
-        { src: '/images/IMG_8922.GIF', alt: 'Lions GIF' },
         { src: '/images/koolaid_lions.jpeg', alt: 'Kool Aid Lions' },
-        { src: '/images/Detroit-Lions-emblem.jpg', alt: 'Detroit Lions Emblem' },
-        { src: '/images/IMG_1090.jpeg', alt: 'Lions Image' },
-        { src: '/images/GdgB9HaWYAAP_BW.jpeg', alt: 'Lions Image' },
-        { src: '/images/GdgLgm5XcAAKXl0.jpeg', alt: 'Lions Image' }
+        { src: '/images/Detroit-Lions-emblem.jpg', alt: 'Detroit Lions Emblem' }
     ];
 
     useEffect(() => {
@@ -47,7 +46,7 @@ export default function FunnyImages({ gameResult, isLoading }: FunnyImagesProps)
 
         // Show out.gif until there's an actual game result this season
         if (!gameResult || gameResult === null) {
-            setCurrentImage('/images/out.gif');
+            setCurrentImage('/images/good/out.gif');
             setImageAlt('Out');
             console.log('No game result yet - showing out.gif');
             return;
