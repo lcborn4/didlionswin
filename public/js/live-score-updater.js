@@ -1,136 +1,136 @@
 // Live Score Updater - Client-side polling for real-time updates
 class LiveScoreUpdater {
-    constructor(apiBaseUrl) {
-        this.apiBaseUrl = apiBaseUrl || 'https://api.didlionswin.com';
-        this.pollInterval = null;
-        this.isPolling = false;
-        this.currentGameId = null;
-        this.retryCount = 0;
-        this.maxRetries = 3;
+  constructor(apiBaseUrl) {
+    this.apiBaseUrl = apiBaseUrl || 'https://7mnzh94kp5.execute-api.us-east-1.amazonaws.com';
+    this.pollInterval = null;
+    this.isPolling = false;
+    this.currentGameId = null;
+    this.retryCount = 0;
+    this.maxRetries = 3;
 
-        console.log('🦁 Live Score Updater initialized');
-        this.init();
+    console.log('🦁 Live Score Updater initialized');
+    this.init();
+  }
+
+  async init() {
+    try {
+      // Check if there's a live game
+      const gameStatus = await this.checkGameStatus();
+
+      if (gameStatus.shouldPoll) {
+        console.log('🏈 Starting live score polling...');
+        this.startPolling(gameStatus.pollInterval);
+      } else {
+        console.log('📺 No live game - polling disabled');
+        this.showStaticContent();
+      }
+
+    } catch (error) {
+      console.error('❌ Failed to initialize live updater:', error);
+      this.showStaticContent();
+    }
+  }
+
+  async checkGameStatus() {
+    const response = await fetch(`${this.apiBaseUrl}/api/game-status`);
+    if (!response.ok) {
+      throw new Error(`Game status check failed: ${response.status}`);
+    }
+    return await response.json();
+  }
+
+  async fetchLiveScore(gameId) {
+    const url = gameId ?
+      `${this.apiBaseUrl}/api/live-score?gameId=${gameId}` :
+      `${this.apiBaseUrl}/api/live-score`;
+
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error(`Live score fetch failed: ${response.status}`);
+    }
+    return await response.json();
+  }
+
+  startPolling(interval = 60000) {
+    if (this.isPolling) {
+      this.stopPolling();
     }
 
-    async init() {
-        try {
-            // Check if there's a live game
-            const gameStatus = await this.checkGameStatus();
+    this.isPolling = true;
+    console.log(`🔄 Starting polling every ${interval / 1000} seconds`);
 
-            if (gameStatus.shouldPoll) {
-                console.log('🏈 Starting live score polling...');
-                this.startPolling(gameStatus.pollInterval);
-            } else {
-                console.log('📺 No live game - polling disabled');
-                this.showStaticContent();
-            }
+    // Initial fetch
+    this.updateLiveScore();
 
-        } catch (error) {
-            console.error('❌ Failed to initialize live updater:', error);
-            this.showStaticContent();
-        }
+    // Set up interval
+    this.pollInterval = setInterval(() => {
+      this.updateLiveScore();
+    }, interval);
+
+    // Show live indicator
+    this.showLiveIndicator(true);
+  }
+
+  stopPolling() {
+    if (this.pollInterval) {
+      clearInterval(this.pollInterval);
+      this.pollInterval = null;
     }
 
-    async checkGameStatus() {
-        const response = await fetch(`${this.apiBaseUrl}/api/game-status`);
-        if (!response.ok) {
-            throw new Error(`Game status check failed: ${response.status}`);
-        }
-        return await response.json();
+    this.isPolling = false;
+    this.showLiveIndicator(false);
+    console.log('⏹️ Stopped live score polling');
+  }
+
+  async updateLiveScore() {
+    try {
+      console.log('🔄 Fetching live score...');
+      const liveData = await this.fetchLiveScore(this.currentGameId);
+
+      // Update the DOM
+      this.updateScoreDisplay(liveData);
+
+      // If game is no longer live, stop polling
+      if (!liveData.isLive) {
+        console.log('🏁 Game finished - stopping polling');
+        this.stopPolling();
+      }
+
+      // Reset retry count on success
+      this.retryCount = 0;
+
+    } catch (error) {
+      console.error('❌ Live score update failed:', error);
+      this.handleError(error);
+    }
+  }
+
+  updateScoreDisplay(liveData) {
+    console.log('📊 Updating score display:', liveData);
+
+    // Update main result
+    const resultElement = document.querySelector('.game-result');
+    if (resultElement) {
+      resultElement.textContent = liveData.result;
+      resultElement.className = `game-result ${liveData.result.toLowerCase().replace(' ', '-')}`;
     }
 
-    async fetchLiveScore(gameId) {
-        const url = gameId ?
-            `${this.apiBaseUrl}/api/live-score?gameId=${gameId}` :
-            `${this.apiBaseUrl}/api/live-score`;
-
-        const response = await fetch(url);
-        if (!response.ok) {
-            throw new Error(`Live score fetch failed: ${response.status}`);
-        }
-        return await response.json();
-    }
-
-    startPolling(interval = 60000) {
-        if (this.isPolling) {
-            this.stopPolling();
-        }
-
-        this.isPolling = true;
-        console.log(`🔄 Starting polling every ${interval / 1000} seconds`);
-
-        // Initial fetch
-        this.updateLiveScore();
-
-        // Set up interval
-        this.pollInterval = setInterval(() => {
-            this.updateLiveScore();
-        }, interval);
-
-        // Show live indicator
-        this.showLiveIndicator(true);
-    }
-
-    stopPolling() {
-        if (this.pollInterval) {
-            clearInterval(this.pollInterval);
-            this.pollInterval = null;
-        }
-
-        this.isPolling = false;
-        this.showLiveIndicator(false);
-        console.log('⏹️ Stopped live score polling');
-    }
-
-    async updateLiveScore() {
-        try {
-            console.log('🔄 Fetching live score...');
-            const liveData = await this.fetchLiveScore(this.currentGameId);
-
-            // Update the DOM
-            this.updateScoreDisplay(liveData);
-
-            // If game is no longer live, stop polling
-            if (!liveData.isLive) {
-                console.log('🏁 Game finished - stopping polling');
-                this.stopPolling();
-            }
-
-            // Reset retry count on success
-            this.retryCount = 0;
-
-        } catch (error) {
-            console.error('❌ Live score update failed:', error);
-            this.handleError(error);
-        }
-    }
-
-    updateScoreDisplay(liveData) {
-        console.log('📊 Updating score display:', liveData);
-
-        // Update main result
-        const resultElement = document.querySelector('.game-result');
-        if (resultElement) {
-            resultElement.textContent = liveData.result;
-            resultElement.className = `game-result ${liveData.result.toLowerCase().replace(' ', '-')}`;
-        }
-
-        // Update score
-        const scoreElement = document.querySelector('.game-score');
-        if (scoreElement) {
-            scoreElement.innerHTML = `
+    // Update score
+    const scoreElement = document.querySelector('.game-score');
+    if (scoreElement) {
+      scoreElement.innerHTML = `
         <div class="score-display">
           <span class="lions-score">${liveData.score.lions}</span>
           <span class="score-separator">-</span>
           <span class="opponent-score">${liveData.score.opponent}</span>
         </div>
       `;
-        }
+    }
 
-        // Update game info
-        const infoElement = document.querySelector('.game-info');
-        if (infoElement) {
-            infoElement.innerHTML = `
+    // Update game info
+    const infoElement = document.querySelector('.game-info');
+    if (infoElement) {
+      infoElement.innerHTML = `
         <div class="game-details">
           <div class="opponent">${liveData.opponent}</div>
           ${liveData.isLive ? `
@@ -144,64 +144,64 @@ class LiveScoreUpdater {
           </div>
         </div>
       `;
-        }
-
-        // Update page title for live games
-        if (liveData.isLive) {
-            document.title = `LIVE: Lions ${liveData.score.lions}-${liveData.score.opponent} | Did The Lions Win?`;
-        }
     }
 
-    showLiveIndicator(show) {
-        let indicator = document.querySelector('.live-indicator');
+    // Update page title for live games
+    if (liveData.isLive) {
+      document.title = `LIVE: Lions ${liveData.score.lions}-${liveData.score.opponent} | Did The Lions Win?`;
+    }
+  }
 
-        if (show && !indicator) {
-            indicator = document.createElement('div');
-            indicator.className = 'live-indicator';
-            indicator.innerHTML = `
+  showLiveIndicator(show) {
+    let indicator = document.querySelector('.live-indicator');
+
+    if (show && !indicator) {
+      indicator = document.createElement('div');
+      indicator.className = 'live-indicator';
+      indicator.innerHTML = `
         <div class="live-badge">
           <span class="live-dot"></span>
           LIVE
         </div>
       `;
 
-            const header = document.querySelector('h1') || document.body.firstChild;
-            if (header) {
-                header.parentNode.insertBefore(indicator, header);
-            }
-        } else if (!show && indicator) {
-            indicator.remove();
-        }
+      const header = document.querySelector('h1') || document.body.firstChild;
+      if (header) {
+        header.parentNode.insertBefore(indicator, header);
+      }
+    } else if (!show && indicator) {
+      indicator.remove();
     }
+  }
 
-    showStaticContent() {
-        console.log('📺 Showing static content');
-        // Remove any live indicators
-        this.showLiveIndicator(false);
+  showStaticContent() {
+    console.log('📺 Showing static content');
+    // Remove any live indicators
+    this.showLiveIndicator(false);
 
-        // Ensure static data is displayed
-        const elements = document.querySelectorAll('[data-static-fallback]');
-        elements.forEach(el => {
-            el.style.display = 'block';
-        });
+    // Ensure static data is displayed
+    const elements = document.querySelectorAll('[data-static-fallback]');
+    elements.forEach(el => {
+      el.style.display = 'block';
+    });
+  }
+
+  handleError(error) {
+    this.retryCount++;
+
+    if (this.retryCount >= this.maxRetries) {
+      console.log('❌ Max retries reached - stopping polling');
+      this.stopPolling();
+      this.showErrorMessage();
+    } else {
+      console.log(`🔄 Retrying... (${this.retryCount}/${this.maxRetries})`);
     }
+  }
 
-    handleError(error) {
-        this.retryCount++;
-
-        if (this.retryCount >= this.maxRetries) {
-            console.log('❌ Max retries reached - stopping polling');
-            this.stopPolling();
-            this.showErrorMessage();
-        } else {
-            console.log(`🔄 Retrying... (${this.retryCount}/${this.maxRetries})`);
-        }
-    }
-
-    showErrorMessage() {
-        const errorElement = document.createElement('div');
-        errorElement.className = 'live-error';
-        errorElement.innerHTML = `
+  showErrorMessage() {
+    const errorElement = document.createElement('div');
+    errorElement.className = 'live-error';
+    errorElement.innerHTML = `
       <div class="error-message">
         ⚠️ Live updates temporarily unavailable
         <button onclick="window.liveUpdater.init()" class="retry-btn">
@@ -210,11 +210,11 @@ class LiveScoreUpdater {
       </div>
     `;
 
-        const main = document.querySelector('main');
-        if (main) {
-            main.insertBefore(errorElement, main.firstChild);
-        }
+    const main = document.querySelector('main');
+    if (main) {
+      main.insertBefore(errorElement, main.firstChild);
     }
+  }
 }
 
 // CSS for live score updates
@@ -346,11 +346,52 @@ const liveScoreCSS = `
 
 // Initialize when DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
-    // Add CSS
-    const style = document.createElement('style');
-    style.textContent = liveScoreCSS;
-    document.head.appendChild(style);
+  console.log('LiveScoreUpdater: DOM loaded, initializing...');
 
-    // Initialize live updater
-    window.liveUpdater = new LiveScoreUpdater();
+  // Add CSS
+  const style = document.createElement('style');
+  style.textContent = liveScoreCSS;
+  document.head.appendChild(style);
+
+  // Simple test first - update the loading text
+  const gameResult = document.getElementById('game-result');
+  if (gameResult) {
+    gameResult.textContent = 'JavaScript is working! Testing API...';
+    gameResult.className = 'game-result loading';
+  }
+
+  // Test API connection first
+  fetch('https://7mnzh94kp5.execute-api.us-east-1.amazonaws.com/api/health')
+    .then(response => {
+      console.log('API Response:', response.status, response.statusText);
+      if (gameResult) {
+        gameResult.textContent = `API Status: ${response.status} - Initializing...`;
+      }
+      return response.json();
+    })
+    .then(data => {
+      console.log('API Data:', data);
+      if (gameResult) {
+        gameResult.textContent = 'API Working! Starting live updater...';
+      }
+
+      // Initialize live updater
+      try {
+        window.liveUpdater = new LiveScoreUpdater();
+        console.log('LiveScoreUpdater: Initialized successfully');
+      } catch (error) {
+        console.error('LiveScoreUpdater: Failed to initialize:', error);
+        if (gameResult) {
+          gameResult.textContent = `Error: ${error.message}`;
+          gameResult.className = 'game-result';
+        }
+      }
+    })
+    .catch(error => {
+      console.error('API Test failed:', error);
+      if (gameResult) {
+        gameResult.textContent = `API Error: ${error.message}`;
+        gameResult.className = 'game-result';
+      }
+    });
 });

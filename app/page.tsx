@@ -1,4 +1,5 @@
 import styles from "@/styles/Home.module.css";
+import ClientOnlyLionsData from "./client-only";
 
 // Static version for initial load
 export default function Home() {
@@ -8,14 +9,12 @@ export default function Home() {
         <h1>Did The Detroit Lions Win?</h1>
       </div>
 
-      {/* Static content that will be enhanced with JavaScript */}
+      {/* Client-only component to avoid hydration issues */}
       <div id="game-content">
-        <div className="game-result" id="game-result">
-          Loading Lions game data...
-        </div>
+        <ClientOnlyLionsData />
         
         <div className="game-info" id="game-info">
-          <p>Checking Lions game status...</p>
+          <p>No game scheduled today</p>
         </div>
 
         <div className="game-score" id="game-score">

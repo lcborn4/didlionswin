@@ -5,6 +5,20 @@ const LIONS_ID = '8';
 const ESPN_API_BASE = 'https://sports.core.api.espn.com/v2/sports/football/leagues/nfl';
 
 export const handler = async (event, context) => {
+    // Handle preflight OPTIONS requests
+    if (event.httpMethod === 'OPTIONS' || event.requestContext?.http?.method === 'OPTIONS') {
+        return {
+            statusCode: 200,
+            headers: {
+                'Access-Control-Allow-Origin': '*',
+                'Access-Control-Allow-Headers': 'Content-Type',
+                'Access-Control-Allow-Methods': 'GET, OPTIONS',
+                'Access-Control-Max-Age': '86400'
+            },
+            body: ''
+        };
+    }
+
     try {
         console.log('Game status check requested');
 
@@ -16,7 +30,20 @@ export const handler = async (event, context) => {
         let currentGame = null;
         let nextGame = null;
 
-        schedule.events.forEach((event, index) => {
+        // Check if schedule has items
+        if (!schedule.items || schedule.items.length === 0) {
+            throw new Error('No games found in schedule');
+        }
+
+        // Get the actual event data from the first few games
+        const recentGames = await Promise.all(
+            schedule.items.slice(0, 5).map(async (item) => {
+                const response = await fetch(item.$ref);
+                return await response.json();
+            })
+        );
+
+        recentGames.forEach((event, index) => {
             const gameDate = new Date(event.date);
             const timeDiff = gameDate.getTime() - today.getTime();
             const hoursDiff = timeDiff / (1000 * 60 * 60);
@@ -132,14 +159,28 @@ export const handler = async (event, context) => {
 };
 
 async function getSchedule() {
-    const scheduleUrl = `${ESPN_API_BASE}/seasons/2024/types/2/teams/8/events`;
-    const response = await fetch(scheduleUrl);
+    // Try 2025 preseason first, then fall back to 2024 regular season
+    const urls = [
+        `${ESPN_API_BASE}/seasons/2025/types/1/teams/8/events`, // 2025 preseason
+        `${ESPN_API_BASE}/seasons/2024/types/2/teams/8/events`  // 2024 regular season
+    ];
 
-    if (!response.ok) {
-        throw new Error(`Schedule API error: ${response.status}`);
+    for (const url of urls) {
+        try {
+            const response = await fetch(url);
+            if (response.ok) {
+                const data = await response.json();
+                if (data.items && data.items.length > 0) {
+                    console.log(`Using schedule from: ${url}`);
+                    return data;
+                }
+            }
+        } catch (error) {
+            console.log(`Failed to fetch from ${url}:`, error.message);
+        }
     }
 
-    return await response.json();
+    throw new Error('No schedule data available');
 }
 
 async function getGameDetails(gameId) {

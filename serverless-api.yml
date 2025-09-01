@@ -48,6 +48,9 @@ custom:
       allowedMethods:
         - GET
         - OPTIONS
+        - POST
+      allowCredentials: false
+      maxAge: 86400
 
 functions:
   # Live score API - only called during games
@@ -85,6 +88,20 @@ functions:
       - httpApi:
           path: /api/health
           method: get
+
+  schedule:
+    handler: api/schedule.handler
+    timeout: 30
+    memorySize: 512
+    reservedConcurrency: 3
+    environment:
+      CACHE_TTL: 1800000
+    events:
+      - httpApi:
+          path: /api/schedule
+          method: get
+
+
 
 resources:
   Resources:

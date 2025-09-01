@@ -41,7 +41,7 @@ export const handler = async (event, context) => {
         if (!gameId) {
             // Get current/latest game if no ID provided
             const schedule = await getSchedule();
-            const latestGameId = findLatestGame(schedule);
+            const latestGameId = await findLatestGame(schedule);
             return await getLiveGameData(latestGameId);
         }
 
@@ -66,27 +66,53 @@ export const handler = async (event, context) => {
 };
 
 async function getSchedule() {
-    const scheduleUrl = `${ESPN_API_BASE}/seasons/2024/types/2/teams/8/events`;
-    const response = await fetch(scheduleUrl);
+    // Try 2025 preseason first, then fall back to 2024 regular season
+    const urls = [
+        `${ESPN_API_BASE}/seasons/2025/types/1/teams/8/events`, // 2025 preseason
+        `${ESPN_API_BASE}/seasons/2024/types/2/teams/8/events`  // 2024 regular season
+    ];
 
-    if (!response.ok) {
-        throw new Error(`ESPN API error: ${response.status}`);
+    for (const url of urls) {
+        try {
+            const response = await fetch(url);
+            if (response.ok) {
+                const data = await response.json();
+                if (data.items && data.items.length > 0) {
+                    console.log(`Using schedule from: ${url}`);
+                    return data;
+                }
+            }
+        } catch (error) {
+            console.log(`Failed to fetch from ${url}:`, error.message);
+        }
     }
 
-    return await response.json();
+    throw new Error('No schedule data available');
 }
 
-function findLatestGame(schedule) {
+async function findLatestGame(schedule) {
     const now = new Date();
     let latestGameIndex = 0;
 
-    schedule.events.forEach((event, index) => {
+    // Get actual event data from items
+    if (!schedule.items || schedule.items.length === 0) {
+        throw new Error('No games found in schedule');
+    }
+
+    const games = await Promise.all(
+        schedule.items.slice(0, 5).map(async (item) => {
+            const response = await fetch(item.$ref);
+            return await response.json();
+        })
+    );
+
+    games.forEach((event, index) => {
         if (Date.parse(event.date) <= now.getTime()) {
             latestGameIndex = index;
         }
     });
 
-    return schedule.events[latestGameIndex].id;
+    return games[latestGameIndex].id;
 }
 
 async function getLiveGameData(gameId) {

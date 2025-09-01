@@ -1,0 +1,1178 @@
+{
+  "service": {
+    "service": "didlionswin-api",
+    "serviceObject": {
+      "name": "didlionswin-api"
+    },
+    "provider": {
+      "name": "aws",
+      "runtime": "nodejs18.x",
+      "region": "us-east-1",
+      "stage": "prod",
+      "environment": {
+        "NODE_ENV": "production",
+        "ESPN_API_URL": "https://sports.core.api.espn.com/v2/sports/football/leagues/nfl",
+        "LIONS_TEAM_ID": "8"
+      },
+      "versionFunctions": true,
+      "compiledCloudFormationTemplate": {
+        "AWSTemplateFormatVersion": "2010-09-09",
+        "Description": "The AWS CloudFormation template for this Serverless application",
+        "Resources": {
+          "ServerlessDeploymentBucket": {
+            "Type": "AWS::S3::Bucket",
+            "Properties": {
+              "BucketEncryption": {
+                "ServerSideEncryptionConfiguration": [
+                  {
+                    "ServerSideEncryptionByDefault": {
+                      "SSEAlgorithm": "AES256"
+                    }
+                  }
+                ]
+              }
+            }
+          },
+          "ServerlessDeploymentBucketPolicy": {
+            "Type": "AWS::S3::BucketPolicy",
+            "Properties": {
+              "Bucket": {
+                "Ref": "ServerlessDeploymentBucket"
+              },
+              "PolicyDocument": {
+                "Statement": [
+                  {
+                    "Action": "s3:*",
+                    "Effect": "Deny",
+                    "Principal": "*",
+                    "Resource": [
+                      {
+                        "Fn::Join": [
+                          "",
+                          [
+                            "arn:",
+                            {
+                              "Ref": "AWS::Partition"
+                            },
+                            ":s3:::",
+                            {
+                              "Ref": "ServerlessDeploymentBucket"
+                            },
+                            "/*"
+                          ]
+                        ]
+                      },
+                      {
+                        "Fn::Join": [
+                          "",
+                          [
+                            "arn:",
+                            {
+                              "Ref": "AWS::Partition"
+                            },
+                            ":s3:::",
+                            {
+                              "Ref": "ServerlessDeploymentBucket"
+                            }
+                          ]
+                        ]
+                      }
+                    ],
+                    "Condition": {
+                      "Bool": {
+                        "aws:SecureTransport": false
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          },
+          "LiveScoreLogGroup": {
+            "Type": "AWS::Logs::LogGroup",
+            "Properties": {
+              "LogGroupName": "/aws/lambda/didlionswin-api-prod-liveScore"
+            }
+          },
+          "GameStatusLogGroup": {
+            "Type": "AWS::Logs::LogGroup",
+            "Properties": {
+              "LogGroupName": "/aws/lambda/didlionswin-api-prod-gameStatus"
+            }
+          },
+          "HealthLogGroup": {
+            "Type": "AWS::Logs::LogGroup",
+            "Properties": {
+              "LogGroupName": "/aws/lambda/didlionswin-api-prod-health"
+            }
+          },
+          "ScheduleLogGroup": {
+            "Type": "AWS::Logs::LogGroup",
+            "Properties": {
+              "LogGroupName": "/aws/lambda/didlionswin-api-prod-schedule"
+            }
+          },
+          "IamRoleLambdaExecution": {
+            "Type": "AWS::IAM::Role",
+            "Properties": {
+              "AssumeRolePolicyDocument": {
+                "Version": "2012-10-17",
+                "Statement": [
+                  {
+                    "Effect": "Allow",
+                    "Principal": {
+                      "Service": [
+                        "lambda.amazonaws.com"
+                      ]
+                    },
+                    "Action": [
+                      "sts:AssumeRole"
+                    ]
+                  }
+                ]
+              },
+              "Policies": [
+                {
+                  "PolicyName": {
+                    "Fn::Join": [
+                      "-",
+                      [
+                        "didlionswin-api",
+                        "prod",
+                        "lambda"
+                      ]
+                    ]
+                  },
+                  "PolicyDocument": {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                      {
+                        "Effect": "Allow",
+                        "Action": [
+                          "logs:CreateLogStream",
+                          "logs:CreateLogGroup",
+                          "logs:TagResource"
+                        ],
+                        "Resource": [
+                          {
+                            "Fn::Sub": "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/didlionswin-api-prod*:*"
+                          }
+                        ]
+                      },
+                      {
+                        "Effect": "Allow",
+                        "Action": [
+                          "logs:PutLogEvents"
+                        ],
+                        "Resource": [
+                          {
+                            "Fn::Sub": "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/didlionswin-api-prod*:*:*"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                }
+              ],
+              "Path": "/",
+              "RoleName": {
+                "Fn::Join": [
+                  "-",
+                  [
+                    "didlionswin-api",
+                    "prod",
+                    {
+                      "Ref": "AWS::Region"
+                    },
+                    "lambdaRole"
+                  ]
+                ]
+              }
+            }
+          },
+          "LiveScoreLambdaFunction": {
+            "Type": "AWS::Lambda::Function",
+            "Properties": {
+              "Code": {
+                "S3Bucket": {
+                  "Ref": "ServerlessDeploymentBucket"
+                },
+                "S3Key": "serverless/didlionswin-api/prod/1756692815093-2025-09-01T02:13:35.093Z/didlionswin-api.zip"
+              },
+              "Handler": "api/live-score.handler",
+              "Runtime": "nodejs18.x",
+              "FunctionName": "didlionswin-api-prod-liveScore",
+              "MemorySize": 256,
+              "Timeout": 10,
+              "Environment": {
+                "Variables": {
+                  "NODE_ENV": "production",
+                  "ESPN_API_URL": "https://sports.core.api.espn.com/v2/sports/football/leagues/nfl",
+                  "LIONS_TEAM_ID": "8",
+                  "CACHE_TTL": "60"
+                }
+              },
+              "Role": {
+                "Fn::GetAtt": [
+                  "IamRoleLambdaExecution",
+                  "Arn"
+                ]
+              },
+              "ReservedConcurrentExecutions": 10
+            },
+            "DependsOn": [
+              "LiveScoreLogGroup"
+            ]
+          },
+          "GameStatusLambdaFunction": {
+            "Type": "AWS::Lambda::Function",
+            "Properties": {
+              "Code": {
+                "S3Bucket": {
+                  "Ref": "ServerlessDeploymentBucket"
+                },
+                "S3Key": "serverless/didlionswin-api/prod/1756692815093-2025-09-01T02:13:35.093Z/didlionswin-api.zip"
+              },
+              "Handler": "api/game-status.handler",
+              "Runtime": "nodejs18.x",
+              "FunctionName": "didlionswin-api-prod-gameStatus",
+              "MemorySize": 256,
+              "Timeout": 10,
+              "Environment": {
+                "Variables": {
+                  "NODE_ENV": "production",
+                  "ESPN_API_URL": "https://sports.core.api.espn.com/v2/sports/football/leagues/nfl",
+                  "LIONS_TEAM_ID": "8",
+                  "CACHE_TTL": "300"
+                }
+              },
+              "Role": {
+                "Fn::GetAtt": [
+                  "IamRoleLambdaExecution",
+                  "Arn"
+                ]
+              },
+              "ReservedConcurrentExecutions": 5
+            },
+            "DependsOn": [
+              "GameStatusLogGroup"
+            ]
+          },
+          "HealthLambdaFunction": {
+            "Type": "AWS::Lambda::Function",
+            "Properties": {
+              "Code": {
+                "S3Bucket": {
+                  "Ref": "ServerlessDeploymentBucket"
+                },
+                "S3Key": "serverless/didlionswin-api/prod/1756692815093-2025-09-01T02:13:35.093Z/didlionswin-api.zip"
+              },
+              "Handler": "api/health.handler",
+              "Runtime": "nodejs18.x",
+              "FunctionName": "didlionswin-api-prod-health",
+              "MemorySize": 128,
+              "Timeout": 5,
+              "Environment": {
+                "Variables": {
+                  "NODE_ENV": "production",
+                  "ESPN_API_URL": "https://sports.core.api.espn.com/v2/sports/football/leagues/nfl",
+                  "LIONS_TEAM_ID": "8"
+                }
+              },
+              "Role": {
+                "Fn::GetAtt": [
+                  "IamRoleLambdaExecution",
+                  "Arn"
+                ]
+              }
+            },
+            "DependsOn": [
+              "HealthLogGroup"
+            ]
+          },
+          "ScheduleLambdaFunction": {
+            "Type": "AWS::Lambda::Function",
+            "Properties": {
+              "Code": {
+                "S3Bucket": {
+                  "Ref": "ServerlessDeploymentBucket"
+                },
+                "S3Key": "serverless/didlionswin-api/prod/1756692815093-2025-09-01T02:13:35.093Z/didlionswin-api.zip"
+              },
+              "Handler": "api/schedule.handler",
+              "Runtime": "nodejs18.x",
+              "FunctionName": "didlionswin-api-prod-schedule",
+              "MemorySize": 512,
+              "Timeout": 30,
+              "Environment": {
+                "Variables": {
+                  "NODE_ENV": "production",
+                  "ESPN_API_URL": "https://sports.core.api.espn.com/v2/sports/football/leagues/nfl",
+                  "LIONS_TEAM_ID": "8",
+                  "CACHE_TTL": "1800000"
+                }
+              },
+              "Role": {
+                "Fn::GetAtt": [
+                  "IamRoleLambdaExecution",
+                  "Arn"
+                ]
+              },
+              "ReservedConcurrentExecutions": 3
+            },
+            "DependsOn": [
+              "ScheduleLogGroup"
+            ]
+          },
+          "LiveScoreLambdaVersionsgT3n82qxJ6gF5KqsQF0BJfgAtAkbnVRTfD29SGvy4A": {
+            "Type": "AWS::Lambda::Version",
+            "DeletionPolicy": "Retain",
+            "Properties": {
+              "FunctionName": {
+                "Ref": "LiveScoreLambdaFunction"
+              },
+              "CodeSha256": "XDHJ6xpzwKK5yG68DWSdip9C+8fo88yIb5yY4/uAWds="
+            }
+          },
+          "GameStatusLambdaVersionrNO9Z01ZZaJAGGKzgr0BE3JmcKCKtRP2gTSyjm7Eg": {
+            "Type": "AWS::Lambda::Version",
+            "DeletionPolicy": "Retain",
+            "Properties": {
+              "FunctionName": {
+                "Ref": "GameStatusLambdaFunction"
+              },
+              "CodeSha256": "XDHJ6xpzwKK5yG68DWSdip9C+8fo88yIb5yY4/uAWds="
+            }
+          },
+          "HealthLambdaVersionNdrhRMW8IclUP1MOIkSoE0CcNel2HQu0k3V678ElPg": {
+            "Type": "AWS::Lambda::Version",
+            "DeletionPolicy": "Retain",
+            "Properties": {
+              "FunctionName": {
+                "Ref": "HealthLambdaFunction"
+              },
+              "CodeSha256": "XDHJ6xpzwKK5yG68DWSdip9C+8fo88yIb5yY4/uAWds="
+            }
+          },
+          "ScheduleLambdaVersionmNcwMAvRBXcEEqud8gBWOGmtppDt33OHepjK0ENkk": {
+            "Type": "AWS::Lambda::Version",
+            "DeletionPolicy": "Retain",
+            "Properties": {
+              "FunctionName": {
+                "Ref": "ScheduleLambdaFunction"
+              },
+              "CodeSha256": "XDHJ6xpzwKK5yG68DWSdip9C+8fo88yIb5yY4/uAWds="
+            }
+          },
+          "HttpApi": {
+            "Type": "AWS::ApiGatewayV2::Api",
+            "Properties": {
+              "Name": "prod-didlionswin-api",
+              "ProtocolType": "HTTP"
+            }
+          },
+          "HttpApiStage": {
+            "Type": "AWS::ApiGatewayV2::Stage",
+            "Properties": {
+              "ApiId": {
+                "Ref": "HttpApi"
+              },
+              "StageName": "$default",
+              "AutoDeploy": true,
+              "DefaultRouteSettings": {
+                "DetailedMetricsEnabled": false
+              }
+            }
+          },
+          "LiveScoreLambdaPermissionHttpApi": {
+            "Type": "AWS::Lambda::Permission",
+            "Properties": {
+              "FunctionName": {
+                "Fn::GetAtt": [
+                  "LiveScoreLambdaFunction",
+                  "Arn"
+                ]
+              },
+              "Action": "lambda:InvokeFunction",
+              "Principal": "apigateway.amazonaws.com",
+              "SourceArn": {
+                "Fn::Join": [
+                  "",
+                  [
+                    "arn:",
+                    {
+                      "Ref": "AWS::Partition"
+                    },
+                    ":execute-api:",
+                    {
+                      "Ref": "AWS::Region"
+                    },
+                    ":",
+                    {
+                      "Ref": "AWS::AccountId"
+                    },
+                    ":",
+                    {
+                      "Ref": "HttpApi"
+                    },
+                    "/*"
+                  ]
+                ]
+              }
+            }
+          },
+          "HttpApiIntegrationLiveScore": {
+            "Type": "AWS::ApiGatewayV2::Integration",
+            "Properties": {
+              "ApiId": {
+                "Ref": "HttpApi"
+              },
+              "IntegrationType": "AWS_PROXY",
+              "IntegrationUri": {
+                "$ref": "$[\"service\"][\"provider\"][\"compiledCloudFormationTemplate\"][\"Resources\"][\"LiveScoreLambdaPermissionHttpApi\"][\"Properties\"][\"FunctionName\"]"
+              },
+              "PayloadFormatVersion": "2.0",
+              "TimeoutInMillis": 30000
+            }
+          },
+          "HttpApiRouteGetApiLiveDashscore": {
+            "Type": "AWS::ApiGatewayV2::Route",
+            "Properties": {
+              "ApiId": {
+                "Ref": "HttpApi"
+              },
+              "RouteKey": "GET /api/live-score",
+              "Target": {
+                "Fn::Join": [
+                  "/",
+                  [
+                    "integrations",
+                    {
+                      "Ref": "HttpApiIntegrationLiveScore"
+                    }
+                  ]
+                ]
+              }
+            },
+            "DependsOn": "HttpApiIntegrationLiveScore"
+          },
+          "GameStatusLambdaPermissionHttpApi": {
+            "Type": "AWS::Lambda::Permission",
+            "Properties": {
+              "FunctionName": {
+                "Fn::GetAtt": [
+                  "GameStatusLambdaFunction",
+                  "Arn"
+                ]
+              },
+              "Action": "lambda:InvokeFunction",
+              "Principal": "apigateway.amazonaws.com",
+              "SourceArn": {
+                "Fn::Join": [
+                  "",
+                  [
+                    "arn:",
+                    {
+                      "Ref": "AWS::Partition"
+                    },
+                    ":execute-api:",
+                    {
+                      "Ref": "AWS::Region"
+                    },
+                    ":",
+                    {
+                      "Ref": "AWS::AccountId"
+                    },
+                    ":",
+                    {
+                      "Ref": "HttpApi"
+                    },
+                    "/*"
+                  ]
+                ]
+              }
+            }
+          },
+          "HttpApiIntegrationGameStatus": {
+            "Type": "AWS::ApiGatewayV2::Integration",
+            "Properties": {
+              "ApiId": {
+                "Ref": "HttpApi"
+              },
+              "IntegrationType": "AWS_PROXY",
+              "IntegrationUri": {
+                "$ref": "$[\"service\"][\"provider\"][\"compiledCloudFormationTemplate\"][\"Resources\"][\"GameStatusLambdaPermissionHttpApi\"][\"Properties\"][\"FunctionName\"]"
+              },
+              "PayloadFormatVersion": "2.0",
+              "TimeoutInMillis": 30000
+            }
+          },
+          "HttpApiRouteGetApiGameDashstatus": {
+            "Type": "AWS::ApiGatewayV2::Route",
+            "Properties": {
+              "ApiId": {
+                "Ref": "HttpApi"
+              },
+              "RouteKey": "GET /api/game-status",
+              "Target": {
+                "Fn::Join": [
+                  "/",
+                  [
+                    "integrations",
+                    {
+                      "Ref": "HttpApiIntegrationGameStatus"
+                    }
+                  ]
+                ]
+              }
+            },
+            "DependsOn": "HttpApiIntegrationGameStatus"
+          },
+          "HealthLambdaPermissionHttpApi": {
+            "Type": "AWS::Lambda::Permission",
+            "Properties": {
+              "FunctionName": {
+                "Fn::GetAtt": [
+                  "HealthLambdaFunction",
+                  "Arn"
+                ]
+              },
+              "Action": "lambda:InvokeFunction",
+              "Principal": "apigateway.amazonaws.com",
+              "SourceArn": {
+                "Fn::Join": [
+                  "",
+                  [
+                    "arn:",
+                    {
+                      "Ref": "AWS::Partition"
+                    },
+                    ":execute-api:",
+                    {
+                      "Ref": "AWS::Region"
+                    },
+                    ":",
+                    {
+                      "Ref": "AWS::AccountId"
+                    },
+                    ":",
+                    {
+                      "Ref": "HttpApi"
+                    },
+                    "/*"
+                  ]
+                ]
+              }
+            }
+          },
+          "HttpApiIntegrationHealth": {
+            "Type": "AWS::ApiGatewayV2::Integration",
+            "Properties": {
+              "ApiId": {
+                "Ref": "HttpApi"
+              },
+              "IntegrationType": "AWS_PROXY",
+              "IntegrationUri": {
+                "$ref": "$[\"service\"][\"provider\"][\"compiledCloudFormationTemplate\"][\"Resources\"][\"HealthLambdaPermissionHttpApi\"][\"Properties\"][\"FunctionName\"]"
+              },
+              "PayloadFormatVersion": "2.0",
+              "TimeoutInMillis": 30000
+            }
+          },
+          "HttpApiRouteGetApiHealth": {
+            "Type": "AWS::ApiGatewayV2::Route",
+            "Properties": {
+              "ApiId": {
+                "Ref": "HttpApi"
+              },
+              "RouteKey": "GET /api/health",
+              "Target": {
+                "Fn::Join": [
+                  "/",
+                  [
+                    "integrations",
+                    {
+                      "Ref": "HttpApiIntegrationHealth"
+                    }
+                  ]
+                ]
+              }
+            },
+            "DependsOn": "HttpApiIntegrationHealth"
+          },
+          "ScheduleLambdaPermissionHttpApi": {
+            "Type": "AWS::Lambda::Permission",
+            "Properties": {
+              "FunctionName": {
+                "Fn::GetAtt": [
+                  "ScheduleLambdaFunction",
+                  "Arn"
+                ]
+              },
+              "Action": "lambda:InvokeFunction",
+              "Principal": "apigateway.amazonaws.com",
+              "SourceArn": {
+                "Fn::Join": [
+                  "",
+                  [
+                    "arn:",
+                    {
+                      "Ref": "AWS::Partition"
+                    },
+                    ":execute-api:",
+                    {
+                      "Ref": "AWS::Region"
+                    },
+                    ":",
+                    {
+                      "Ref": "AWS::AccountId"
+                    },
+                    ":",
+                    {
+                      "Ref": "HttpApi"
+                    },
+                    "/*"
+                  ]
+                ]
+              }
+            }
+          },
+          "HttpApiIntegrationSchedule": {
+            "Type": "AWS::ApiGatewayV2::Integration",
+            "Properties": {
+              "ApiId": {
+                "Ref": "HttpApi"
+              },
+              "IntegrationType": "AWS_PROXY",
+              "IntegrationUri": {
+                "$ref": "$[\"service\"][\"provider\"][\"compiledCloudFormationTemplate\"][\"Resources\"][\"ScheduleLambdaPermissionHttpApi\"][\"Properties\"][\"FunctionName\"]"
+              },
+              "PayloadFormatVersion": "2.0",
+              "TimeoutInMillis": 30000
+            }
+          },
+          "HttpApiRouteGetApiSchedule": {
+            "Type": "AWS::ApiGatewayV2::Route",
+            "Properties": {
+              "ApiId": {
+                "Ref": "HttpApi"
+              },
+              "RouteKey": "GET /api/schedule",
+              "Target": {
+                "Fn::Join": [
+                  "/",
+                  [
+                    "integrations",
+                    {
+                      "Ref": "HttpApiIntegrationSchedule"
+                    }
+                  ]
+                ]
+              }
+            },
+            "DependsOn": "HttpApiIntegrationSchedule"
+          },
+          "LambdaErrorAlarm": {
+            "Type": "AWS::CloudWatch::Alarm",
+            "Properties": {
+              "AlarmName": "DidLionsWin-Lambda-Errors",
+              "AlarmDescription": "Alert on Lambda function errors",
+              "MetricName": "Errors",
+              "Namespace": "AWS/Lambda",
+              "Statistic": "Sum",
+              "Period": 300,
+              "EvaluationPeriods": 2,
+              "Threshold": 10,
+              "ComparisonOperator": "GreaterThanThreshold",
+              "Dimensions": [
+                {
+                  "Name": "FunctionName",
+                  "Value": {
+                    "Ref": "LiveScoreLambdaFunction"
+                  }
+                }
+              ],
+              "TreatMissingData": "notBreaching"
+            }
+          },
+          "BillingAlarm": {
+            "Type": "AWS::CloudWatch::Alarm",
+            "Properties": {
+              "AlarmName": "DidLionsWin-Cost-Alert",
+              "AlarmDescription": "Alert when AWS bill exceeds $20",
+              "MetricName": "EstimatedCharges",
+              "Namespace": "AWS/Billing",
+              "Statistic": "Maximum",
+              "Period": 86400,
+              "EvaluationPeriods": 1,
+              "Threshold": 20,
+              "ComparisonOperator": "GreaterThanThreshold",
+              "Dimensions": [
+                {
+                  "Name": "Currency",
+                  "Value": "USD"
+                }
+              ],
+              "TreatMissingData": "notBreaching"
+            }
+          }
+        },
+        "Outputs": {
+          "ServerlessDeploymentBucketName": {
+            "Value": {
+              "Ref": "ServerlessDeploymentBucket"
+            },
+            "Export": {
+              "Name": "sls-didlionswin-api-prod-ServerlessDeploymentBucketName"
+            }
+          },
+          "LiveScoreLambdaFunctionQualifiedArn": {
+            "Description": "Current Lambda function version",
+            "Value": {
+              "Ref": "LiveScoreLambdaVersionsgT3n82qxJ6gF5KqsQF0BJfgAtAkbnVRTfD29SGvy4A"
+            },
+            "Export": {
+              "Name": "sls-didlionswin-api-prod-LiveScoreLambdaFunctionQualifiedArn"
+            }
+          },
+          "GameStatusLambdaFunctionQualifiedArn": {
+            "Description": "Current Lambda function version",
+            "Value": {
+              "Ref": "GameStatusLambdaVersionrNO9Z01ZZaJAGGKzgr0BE3JmcKCKtRP2gTSyjm7Eg"
+            },
+            "Export": {
+              "Name": "sls-didlionswin-api-prod-GameStatusLambdaFunctionQualifiedArn"
+            }
+          },
+          "HealthLambdaFunctionQualifiedArn": {
+            "Description": "Current Lambda function version",
+            "Value": {
+              "Ref": "HealthLambdaVersionNdrhRMW8IclUP1MOIkSoE0CcNel2HQu0k3V678ElPg"
+            },
+            "Export": {
+              "Name": "sls-didlionswin-api-prod-HealthLambdaFunctionQualifiedArn"
+            }
+          },
+          "ScheduleLambdaFunctionQualifiedArn": {
+            "Description": "Current Lambda function version",
+            "Value": {
+              "Ref": "ScheduleLambdaVersionmNcwMAvRBXcEEqud8gBWOGmtppDt33OHepjK0ENkk"
+            },
+            "Export": {
+              "Name": "sls-didlionswin-api-prod-ScheduleLambdaFunctionQualifiedArn"
+            }
+          },
+          "HttpApiId": {
+            "Description": "Id of the HTTP API",
+            "Value": {
+              "Ref": "HttpApi"
+            },
+            "Export": {
+              "Name": "sls-didlionswin-api-prod-HttpApiId"
+            }
+          },
+          "HttpApiUrl": {
+            "Description": "URL of the HTTP API",
+            "Value": {
+              "Fn::Join": [
+                "",
+                [
+                  "https://",
+                  {
+                    "Ref": "HttpApi"
+                  },
+                  ".execute-api.",
+                  {
+                    "Ref": "AWS::Region"
+                  },
+                  ".",
+                  {
+                    "Ref": "AWS::URLSuffix"
+                  }
+                ]
+              ]
+            },
+            "Export": {
+              "Name": "sls-didlionswin-api-prod-HttpApiUrl"
+            }
+          },
+          "ApiGatewayHttpApiUrl": {
+            "Value": {
+              "Fn::Join": [
+                "",
+                [
+                  "https://",
+                  {
+                    "Ref": "HttpApi"
+                  },
+                  ".execute-api.",
+                  "us-east-1",
+                  ".amazonaws.com"
+                ]
+              ]
+            },
+            "Description": "Live Score API endpoint"
+          },
+          "LiveScoreEndpoint": {
+            "Value": {
+              "Fn::Join": [
+                "",
+                [
+                  "https://",
+                  {
+                    "Ref": "HttpApi"
+                  },
+                  ".execute-api.",
+                  "us-east-1",
+                  ".amazonaws.com/api/live-score"
+                ]
+              ]
+            },
+            "Description": "Live score endpoint for frontend polling"
+          }
+        }
+      },
+      "coreCloudFormationTemplate": {
+        "AWSTemplateFormatVersion": "2010-09-09",
+        "Description": "The AWS CloudFormation template for this Serverless application",
+        "Resources": {
+          "ServerlessDeploymentBucket": {
+            "Type": "AWS::S3::Bucket",
+            "Properties": {
+              "BucketEncryption": {
+                "ServerSideEncryptionConfiguration": [
+                  {
+                    "ServerSideEncryptionByDefault": {
+                      "SSEAlgorithm": "AES256"
+                    }
+                  }
+                ]
+              }
+            }
+          },
+          "ServerlessDeploymentBucketPolicy": {
+            "Type": "AWS::S3::BucketPolicy",
+            "Properties": {
+              "Bucket": {
+                "Ref": "ServerlessDeploymentBucket"
+              },
+              "PolicyDocument": {
+                "Statement": [
+                  {
+                    "Action": "s3:*",
+                    "Effect": "Deny",
+                    "Principal": "*",
+                    "Resource": [
+                      {
+                        "Fn::Join": [
+                          "",
+                          [
+                            "arn:",
+                            {
+                              "Ref": "AWS::Partition"
+                            },
+                            ":s3:::",
+                            {
+                              "Ref": "ServerlessDeploymentBucket"
+                            },
+                            "/*"
+                          ]
+                        ]
+                      },
+                      {
+                        "Fn::Join": [
+                          "",
+                          [
+                            "arn:",
+                            {
+                              "Ref": "AWS::Partition"
+                            },
+                            ":s3:::",
+                            {
+                              "Ref": "ServerlessDeploymentBucket"
+                            }
+                          ]
+                        ]
+                      }
+                    ],
+                    "Condition": {
+                      "Bool": {
+                        "aws:SecureTransport": false
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "Outputs": {
+          "ServerlessDeploymentBucketName": {
+            "Value": {
+              "Ref": "ServerlessDeploymentBucket"
+            }
+          }
+        }
+      },
+      "vpc": {}
+    },
+    "custom": {
+      "lambdaTimeout": 10,
+      "lambdaMemorySize": 256,
+      "httpApi": {
+        "cors": {
+          "allowedOrigins": [
+            "*"
+          ],
+          "allowedHeaders": [
+            "Content-Type",
+            "X-Amz-Date",
+            "Authorization",
+            "X-Api-Key",
+            "X-Amz-Security-Token",
+            "X-Amz-User-Agent"
+          ],
+          "allowedMethods": [
+            "GET",
+            "OPTIONS",
+            "POST"
+          ],
+          "allowCredentials": false,
+          "maxAge": 86400
+        }
+      }
+    },
+    "plugins": [
+      "serverless-offline"
+    ],
+    "pluginsData": {},
+    "functions": {
+      "liveScore": {
+        "handler": "api/live-score.handler",
+        "timeout": 10,
+        "memorySize": 256,
+        "reservedConcurrency": 10,
+        "events": [
+          {
+            "httpApi": {
+              "path": "/api/live-score",
+              "method": "get"
+            },
+            "resolvedMethod": "GET",
+            "resolvedPath": "/api/live-score"
+          }
+        ],
+        "environment": {
+          "CACHE_TTL": "60"
+        },
+        "name": "didlionswin-api-prod-liveScore",
+        "package": {},
+        "memory": 256,
+        "runtime": "nodejs18.x",
+        "vpc": {},
+        "versionLogicalId": "LiveScoreLambdaVersionsgT3n82qxJ6gF5KqsQF0BJfgAtAkbnVRTfD29SGvy4A"
+      },
+      "gameStatus": {
+        "handler": "api/game-status.handler",
+        "timeout": 10,
+        "memorySize": 256,
+        "reservedConcurrency": 5,
+        "events": [
+          {
+            "httpApi": {
+              "path": "/api/game-status",
+              "method": "get"
+            },
+            "resolvedMethod": "GET",
+            "resolvedPath": "/api/game-status"
+          }
+        ],
+        "environment": {
+          "CACHE_TTL": "300"
+        },
+        "name": "didlionswin-api-prod-gameStatus",
+        "package": {},
+        "memory": 256,
+        "runtime": "nodejs18.x",
+        "vpc": {},
+        "versionLogicalId": "GameStatusLambdaVersionrNO9Z01ZZaJAGGKzgr0BE3JmcKCKtRP2gTSyjm7Eg"
+      },
+      "health": {
+        "handler": "api/health.handler",
+        "timeout": 5,
+        "memorySize": 128,
+        "events": [
+          {
+            "httpApi": {
+              "path": "/api/health",
+              "method": "get"
+            },
+            "resolvedMethod": "GET",
+            "resolvedPath": "/api/health"
+          }
+        ],
+        "name": "didlionswin-api-prod-health",
+        "package": {},
+        "memory": 128,
+        "runtime": "nodejs18.x",
+        "vpc": {},
+        "versionLogicalId": "HealthLambdaVersionNdrhRMW8IclUP1MOIkSoE0CcNel2HQu0k3V678ElPg"
+      },
+      "schedule": {
+        "handler": "api/schedule.handler",
+        "timeout": 30,
+        "memorySize": 512,
+        "reservedConcurrency": 3,
+        "environment": {
+          "CACHE_TTL": "1800000"
+        },
+        "events": [
+          {
+            "httpApi": {
+              "path": "/api/schedule",
+              "method": "get"
+            },
+            "resolvedMethod": "GET",
+            "resolvedPath": "/api/schedule"
+          }
+        ],
+        "name": "didlionswin-api-prod-schedule",
+        "package": {},
+        "memory": 512,
+        "runtime": "nodejs18.x",
+        "vpc": {},
+        "versionLogicalId": "ScheduleLambdaVersionmNcwMAvRBXcEEqud8gBWOGmtppDt33OHepjK0ENkk"
+      }
+    },
+    "resources": {
+      "Resources": {
+        "LambdaErrorAlarm": {
+          "Type": "AWS::CloudWatch::Alarm",
+          "Properties": {
+            "AlarmName": "DidLionsWin-Lambda-Errors",
+            "AlarmDescription": "Alert on Lambda function errors",
+            "MetricName": "Errors",
+            "Namespace": "AWS/Lambda",
+            "Statistic": "Sum",
+            "Period": 300,
+            "EvaluationPeriods": 2,
+            "Threshold": 10,
+            "ComparisonOperator": "GreaterThanThreshold",
+            "Dimensions": [
+              {
+                "Name": "FunctionName",
+                "Value": {
+                  "Ref": "LiveScoreLambdaFunction"
+                }
+              }
+            ],
+            "TreatMissingData": "notBreaching"
+          }
+        },
+        "BillingAlarm": {
+          "Type": "AWS::CloudWatch::Alarm",
+          "Properties": {
+            "AlarmName": "DidLionsWin-Cost-Alert",
+            "AlarmDescription": "Alert when AWS bill exceeds $20",
+            "MetricName": "EstimatedCharges",
+            "Namespace": "AWS/Billing",
+            "Statistic": "Maximum",
+            "Period": 86400,
+            "EvaluationPeriods": 1,
+            "Threshold": 20,
+            "ComparisonOperator": "GreaterThanThreshold",
+            "Dimensions": [
+              {
+                "Name": "Currency",
+                "Value": "USD"
+              }
+            ],
+            "TreatMissingData": "notBreaching"
+          }
+        }
+      },
+      "Outputs": {
+        "ApiGatewayHttpApiUrl": {
+          "Value": {
+            "Fn::Join": [
+              "",
+              [
+                "https://",
+                {
+                  "Ref": "HttpApi"
+                },
+                ".execute-api.",
+                "us-east-1",
+                ".amazonaws.com"
+              ]
+            ]
+          },
+          "Description": "Live Score API endpoint"
+        },
+        "LiveScoreEndpoint": {
+          "Value": {
+            "Fn::Join": [
+              "",
+              [
+                "https://",
+                {
+                  "Ref": "HttpApi"
+                },
+                ".execute-api.",
+                "us-east-1",
+                ".amazonaws.com/api/live-score"
+              ]
+            ]
+          },
+          "Description": "Live score endpoint for frontend polling"
+        }
+      }
+    },
+    "configValidationMode": "warn",
+    "serviceFilename": "serverless-api.yml",
+    "initialServerlessConfig": {
+      "service": "didlionswin-api",
+      "frameworkVersion": "3",
+      "provider": {
+        "$ref": "$[\"service\"][\"provider\"]"
+      },
+      "plugins": {
+        "$ref": "$[\"service\"][\"plugins\"]"
+      },
+      "package": {
+        "patterns": [
+          "api/**",
+          "!node_modules/**",
+          "!.next/**",
+          "!out/**",
+          "!.git/**",
+          "!Documentation/**",
+          "!assets/**",
+          "!public/**",
+          "!styles/**",
+          "!scripts/**",
+          "!*.md"
+        ],
+        "artifactsS3KeyDirname": "serverless/didlionswin-api/prod/code-artifacts",
+        "artifact": "/Users/loganborn/Documents/GitHub/didlionswin/.serverless/didlionswin-api.zip",
+        "artifactDirectoryName": "serverless/didlionswin-api/prod/1756692815093-2025-09-01T02:13:35.093Z"
+      },
+      "custom": {
+        "$ref": "$[\"service\"][\"custom\"]"
+      },
+      "functions": {
+        "$ref": "$[\"service\"][\"functions\"]"
+      },
+      "resources": {
+        "$ref": "$[\"service\"][\"resources\"]"
+      }
+    },
+    "layers": {},
+    "isDashboardMonitoringPreconfigured": false,
+    "artifact": "/Users/loganborn/Documents/GitHub/didlionswin/.serverless/didlionswin-api.zip"
+  },
+  "package": {
+    "artifactDirectoryName": "serverless/didlionswin-api/prod/1756692815093-2025-09-01T02:13:35.093Z",
+    "artifact": "didlionswin-api.zip"
+  }
+}

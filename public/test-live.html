@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🔴 LIVE GAME TEST - Did The Detroit Lions Win?</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+
+        h1 {
+            text-align: center;
+            font-size: 2.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .live-indicator {
+            background: #ff0000;
+            color: white;
+            padding: 1rem 2rem;
+            border-radius: 10px;
+            text-align: center;
+            font-size: 2rem;
+            font-weight: bold;
+            margin: 2rem 0;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.7;
+            }
+        }
+
+        .live-score {
+            background: #000;
+            color: #00ff00;
+            padding: 2rem;
+            border-radius: 10px;
+            text-align: center;
+            font-family: 'Courier New', monospace;
+            font-size: 1.5rem;
+            margin: 2rem 0;
+        }
+
+        .score-display {
+            font-size: 3rem;
+            font-weight: bold;
+            margin: 1rem 0;
+        }
+
+        .game-info {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 2rem;
+            margin: 2rem 0;
+        }
+
+        .game-card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .game-card h3 {
+            margin-top: 0;
+            color: #0066cc;
+        }
+
+        .update-info {
+            background: #e8f4fd;
+            padding: 1rem;
+            border-radius: 5px;
+            margin: 2rem 0;
+            text-align: center;
+            color: #666;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>🔴 LIVE GAME TEST - Did The Detroit Lions Win?</h1>
+
+    <div class="live-indicator" id="liveIndicator">
+        🔴 GAME DAY! Loading live game...
+    </div>
+
+    <div class="live-score" id="liveScore">
+        <div>LIVE SCORE</div>
+        <div class="score-display" id="scoreDisplay">-- - --</div>
+        <div id="gameStatus">Loading...</div>
+    </div>
+
+    <div class="game-info">
+        <div class="game-card">
+            <h3>Previous Game</h3>
+            <div id="prevGame">Loading...</div>
+        </div>
+        <div class="game-card">
+            <h3>🔴 LIVE Game</h3>
+            <div id="liveGame">Loading...</div>
+        </div>
+        <div class="game-card">
+            <h3>Next Game</h3>
+            <div id="nextGame">Loading...</div>
+        </div>
+    </div>
+
+    <div class="update-info">
+        📡 Auto-updating every 60 seconds during live games<br />
+        Last update: <span id="lastUpdate">Never</span>
+    </div>
+
+    <script>
+        let updateInterval;
+
+        async function loadLiveGameData() {
+            try {
+                console.log('Loading live game data...');
+
+                // Load mock live data
+                const [statusResponse, liveResponse, scheduleResponse] = await Promise.all([
+                    fetch('https://7mnzh94kp5.execute-api.us-east-1.amazonaws.com/api/mock-status'),
+                    fetch('https://7mnzh94kp5.execute-api.us-east-1.amazonaws.com/api/mock-live'),
+                    fetch('https://7mnzh94kp5.execute-api.us-east-1.amazonaws.com/api/schedule')
+                ]);
+
+                const statusData = await statusResponse.json();
+                const liveData = await liveResponse.json();
+                const scheduleData = await scheduleResponse.json();
+
+                console.log('Live data loaded:', { statusData, liveData, scheduleData });
+
+                // Update live indicator
+                if (statusData.hasLiveGame) {
+                    document.getElementById('liveIndicator').textContent =
+                        `🔴 GAME DAY! ${liveData.name} - LIVE`;
+                }
+
+                // Update live score
+                document.getElementById('scoreDisplay').textContent =
+                    `Lions ${liveData.score.lions} - Packers ${liveData.score.opponent}`;
+                document.getElementById('gameStatus').textContent =
+                    `Quarter ${liveData.quarter} - ${liveData.clock} remaining`;
+
+                // Update game sections
+                document.getElementById('prevGame').textContent =
+                    scheduleData.previousGame ?
+                        `✅ ${scheduleData.previousGame.name} - Lions 26, Dolphins 17` :
+                        'No previous game';
+
+                document.getElementById('liveGame').textContent =
+                    `🔴 ${liveData.name} - Lions ${liveData.score.lions}, Packers ${liveData.score.opponent} (Q${liveData.quarter} ${liveData.clock})`;
+
+                document.getElementById('nextGame').textContent =
+                    statusData.nextGame ?
+                        `🏈 ${statusData.nextGame.name} - 9/14/2025` :
+                        'No next game';
+
+                // Update timestamp
+                document.getElementById('lastUpdate').textContent = new Date().toLocaleTimeString();
+
+                // Start auto-updates if live game
+                if (statusData.shouldPoll && !updateInterval) {
+                    updateInterval = setInterval(loadLiveGameData, statusData.pollInterval);
+                    console.log(`Started auto-updates every ${statusData.pollInterval}ms`);
+                }
+
+            } catch (error) {
+                console.error('Error loading live data:', error);
+                document.getElementById('liveIndicator').textContent = '❌ Error loading live game data';
+            }
+        }
+
+        // Load initial data
+        loadLiveGameData();
+
+        // Cleanup on page unload
+        window.addEventListener('beforeunload', () => {
+            if (updateInterval) {
+                clearInterval(updateInterval);
+            }
+        });
+    </script>
+</body>
+
+</html>

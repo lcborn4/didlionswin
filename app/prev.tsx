@@ -1,7 +1,7 @@
 import styles from "@/styles/Home.module.css";
 import { cache, Suspense } from "react";
 import { RingLoader } from "react-spinners";
-import { Inter } from "@next/font/google";
+import { Inter } from "next/font/google";
 
 import moment from "moment-timezone";
 
