@@ -14,6 +14,12 @@ const nextConfig = {
             unoptimized: true, // Required for static export
         },
     }),
+    // Image configuration for both development and production
+    images: {
+        unoptimized: true, // Required for static export
+        domains: [],
+        remotePatterns: [],
+    },
     // Environment variables for API endpoints
     env: {
         LIVE_SCORE_API: process.env.LIVE_SCORE_API || 'https://api.didlionswin.com',

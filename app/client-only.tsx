@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import FunnyImages from './components/FunnyImages';
 
 export default function ClientOnlyLionsData() {
     const [gameData, setGameData] = useState('🏈 No game today');
@@ -8,6 +9,7 @@ export default function ClientOnlyLionsData() {
     const [latestGame, setLatestGame] = useState('Loading latest game...');
     const [nextGame, setNextGame] = useState('Loading next game...');
     const [isLoading, setIsLoading] = useState(false); // Start with false for faster perceived load
+    const [gameResult, setGameResult] = useState<'WIN' | 'LOSS' | 'TIE' | null>(null);
 
     useEffect(() => {
         console.log('Client component mounted');
@@ -81,6 +83,7 @@ export default function ClientOnlyLionsData() {
                     const game = scheduleData.latestGame;
                     let emoji = '🏈';
                     let scoreText = '';
+                    let result: 'WIN' | 'LOSS' | 'TIE' | null = null;
                     
                     console.log('Latest game check:', game.name, 'includes Texans?', game.name.includes('Houston Texans'));
                     
@@ -89,16 +92,28 @@ export default function ClientOnlyLionsData() {
                         console.log('Setting Texans game score');
                         emoji = '❌';
                         scoreText = ' - Lions 7, Texans 26';
+                        result = 'LOSS';
                     } else if (game.score && (game.score.lions > 0 || game.score.opponent > 0)) {
-                        emoji = game.result === 'WIN' ? '✅' : game.result === 'LOSS' ? '❌' : '🏈';
+                        if (game.result === 'WIN') {
+                            emoji = '✅';
+                            result = 'WIN';
+                        } else if (game.result === 'LOSS') {
+                            emoji = '❌';
+                            result = 'LOSS';
+                        } else if (game.result === 'TIE') {
+                            emoji = '🤝';
+                            result = 'TIE';
+                        }
                         scoreText = ` - Lions ${game.score.lions}, ${game.opponent} ${game.score.opponent}`;
                     } else {
                         console.log('No score found for latest game:', game);
                     }
                     
                     setLatestGame(`${emoji} ${game.name}${scoreText}`);
+                    setGameResult(result);
                 } else {
                     setLatestGame('No recent game data');
+                    setGameResult(null);
                 }
                 
                 // Update previous game
@@ -173,11 +188,15 @@ export default function ClientOnlyLionsData() {
     }, [prevGame, latestGame, nextGame, isLoading]);
 
     return (
-        <div 
-            className={`game-result ${isLoading ? 'loading' : ''}`}
-            id="game-result"
-        >
-            {gameData}
+        <div>
+            <div 
+                className={`game-result ${isLoading ? 'loading' : ''}`}
+                id="game-result"
+            >
+                {gameData}
+            </div>
+            
+            <FunnyImages gameResult={gameResult} isLoading={isLoading} />
         </div>
     );
 }
