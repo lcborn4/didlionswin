@@ -60,16 +60,16 @@ export default function ClientOnlyLionsData() {
                     console.warn('Schedule API failed, using fallback data:', scheduleError);
                     scheduleData = {
                         latestGame: {
-                            name: "Preseason 2024 - No current result",
-                            score: null,
-                            opponent: "Preseason",
-                            result: null
+                            name: "Detroit Lions vs Houston Texans",
+                            score: { lions: 7, opponent: 26 },
+                            opponent: "Houston Texans",
+                            result: "LOSS"
                         },
                         previousGame: {
-                            name: "Preseason 2024 - No current result", 
-                            score: null,
-                            opponent: "Preseason",
-                            result: null
+                            name: "Detroit Lions vs Miami Dolphins", 
+                            score: { lions: 26, opponent: 17 },
+                            opponent: "Miami Dolphins",
+                            result: "WIN"
                         },
                         nextGame: {
                             name: "Regular Season 2025",
@@ -87,17 +87,17 @@ export default function ClientOnlyLionsData() {
                     
                     console.log('Latest game check:', game.name, 'result:', game.result);
                     
-                    // Only set result if there's an actual game result (not preseason)
+                    // Show preseason results but don't trigger image/fact display
                     if (game.result && game.score && (game.score.lions > 0 || game.score.opponent > 0)) {
                         if (game.result === 'WIN') {
                             emoji = '✅';
-                            result = 'WIN';
+                            // Don't set result for preseason - keep as null
                         } else if (game.result === 'LOSS') {
                             emoji = '❌';
-                            result = 'LOSS';
+                            // Don't set result for preseason - keep as null
                         } else if (game.result === 'TIE') {
                             emoji = '🤝';
-                            result = 'TIE';
+                            // Don't set result for preseason - keep as null
                         }
                         scoreText = ` - Lions ${game.score.lions}, ${game.opponent} ${game.score.opponent}`;
                     } else {
@@ -108,7 +108,7 @@ export default function ClientOnlyLionsData() {
                     }
                     
                     setLatestGame(`${emoji} ${game.name}${scoreText}`);
-                    setGameResult(result);
+                    setGameResult(null); // Always null for preseason games
                 } else {
                     setLatestGame('No recent game data');
                     setGameResult(null);
