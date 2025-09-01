@@ -45,18 +45,15 @@ export default function FunnyImages({ gameResult, isLoading }: FunnyImagesProps)
             return;
         }
 
-        // On main page (no specific game result), prioritize out.gif
+        // On main page (no specific game result), always show out.gif
         if (!gameResult) {
-            // 50% chance of out.gif, 50% chance of other random images
-            if (Math.random() < 0.5) {
-                setCurrentImage('/images/out.gif');
-                setImageAlt('Out');
-                console.log('Selected main page image: out.gif');
-                return;
-            }
+            setCurrentImage('/images/out.gif');
+            setImageAlt('Out');
+            console.log('Selected main page image: out.gif');
+            return;
         }
 
-        let imagePool: typeof goodImages | typeof badImages | typeof randomImages;
+        let imagePool: typeof goodImages | typeof badImages;
         let poolName: string;
 
         if (gameResult === 'WIN') {
@@ -68,9 +65,11 @@ export default function FunnyImages({ gameResult, isLoading }: FunnyImagesProps)
             imagePool = badImages;
             poolName = 'bad';
         } else {
-            // No game result, show random image (but we already handled out.gif above)
-            imagePool = randomImages;
-            poolName = 'random';
+            // This shouldn't happen now, but fallback to out.gif
+            setCurrentImage('/images/out.gif');
+            setImageAlt('Out');
+            console.log('Fallback to out.gif');
+            return;
         }
 
         // Select random image from the pool
