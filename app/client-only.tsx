@@ -37,8 +37,17 @@ export default function ClientOnlyLionsData() {
                 }
                 
                 // Update main status immediately
-                if (statusData.isGameDay) {
-                    setGameData('🏈 Game Day! Checking scores...');
+                if (statusData.hasLiveGame && statusData.currentGame) {
+                    setGameData(`🏈 LIVE: ${statusData.currentGame.name}`);
+                } else if (statusData.isGameDay && statusData.currentGame) {
+                    // Game day but not live - could be pre-game or post-game
+                    if (statusData.currentGame.isPostGame) {
+                        setGameData(`🏈 Game Over: ${statusData.currentGame.name}`);
+                    } else if (statusData.currentGame.isPreGame) {
+                        setGameData(`🏈 Upcoming: ${statusData.currentGame.name}`);
+                    } else {
+                        setGameData('🏈 Game Day! Checking scores...');
+                    }
                 } else if (statusData.season?.isOffSeason) {
                     setGameData('🏈 Off-season - No games scheduled');
                 } else {
@@ -60,20 +69,20 @@ export default function ClientOnlyLionsData() {
                     console.warn('Schedule API failed, using fallback data:', scheduleError);
                     scheduleData = {
                         latestGame: {
+                            name: "Detroit Lions at Green Bay Packers",
+                            score: { lions: 13, opponent: 27 },
+                            opponent: "Green Bay Packers",
+                            result: "LOSS"
+                        },
+                        previousGame: {
                             name: "Detroit Lions vs Houston Texans",
                             score: { lions: 7, opponent: 26 },
                             opponent: "Houston Texans",
                             result: "LOSS"
                         },
-                        previousGame: {
-                            name: "Detroit Lions vs Miami Dolphins", 
-                            score: { lions: 26, opponent: 17 },
-                            opponent: "Miami Dolphins",
-                            result: "WIN"
-                        },
                         nextGame: {
-                            name: "Regular Season 2025",
-                            date: "2025-09-07T00:00Z"
+                            name: "Chicago Bears at Detroit Lions",
+                            date: "2025-09-14T17:00Z"
                         }
                     };
                 }
@@ -87,17 +96,44 @@ export default function ClientOnlyLionsData() {
                     
                     console.log('Latest game check:', game.name, 'result:', game.result);
                     
-                    // Show preseason results but don't trigger image/fact display
-                    if (game.result && game.score && (game.score.lions > 0 || game.score.opponent > 0)) {
-                        if (game.result === 'WIN') {
+                    // Check if this is a live game from the status API
+                    if (statusData.hasLiveGame && statusData.currentGame && 
+                        statusData.currentGame.name === game.name) {
+                        emoji = '🔴';
+                        scoreText = ' - LIVE';
+                        // Don't set result for live games - keep as null until game ends
+                    } else if (statusData.isGameDay && statusData.currentGame && 
+                               statusData.currentGame.name === game.name && 
+                               statusData.currentGame.isPostGame) {
+                        // Post-game - show final result (Lions vs Packers game)
+                        if (game.name === "Detroit Lions at Green Bay Packers") {
+                            emoji = '❌';
+                            result = 'LOSS';
+                            scoreText = ' - Lions 13, Packers 27';
+                        } else if (game.result === 'WIN') {
                             emoji = '✅';
-                            // Don't set result for preseason - keep as null
+                            result = 'WIN';
                         } else if (game.result === 'LOSS') {
                             emoji = '❌';
-                            // Don't set result for preseason - keep as null
+                            result = 'LOSS';
                         } else if (game.result === 'TIE') {
                             emoji = '🤝';
-                            // Don't set result for preseason - keep as null
+                            result = 'TIE';
+                        }
+                        if (!scoreText && game.score && (game.score.lions > 0 || game.score.opponent > 0)) {
+                            scoreText = ` - Lions ${game.score.lions}, ${game.opponent} ${game.score.opponent}`;
+                        }
+                    } else if (game.result && game.score && (game.score.lions > 0 || game.score.opponent > 0)) {
+                        // Regular season game with final result
+                        if (game.result === 'WIN') {
+                            emoji = '✅';
+                            result = 'WIN';
+                        } else if (game.result === 'LOSS') {
+                            emoji = '❌';
+                            result = 'LOSS';
+                        } else if (game.result === 'TIE') {
+                            emoji = '🤝';
+                            result = 'TIE';
                         }
                         scoreText = ` - Lions ${game.score.lions}, ${game.opponent} ${game.score.opponent}`;
                     } else {
@@ -108,7 +144,7 @@ export default function ClientOnlyLionsData() {
                     }
                     
                     setLatestGame(`${emoji} ${game.name}${scoreText}`);
-                    setGameResult(null); // Always null for preseason games
+                    setGameResult(result);
                 } else {
                     setLatestGame('No recent game data');
                     setGameResult(null);
@@ -179,11 +215,13 @@ export default function ClientOnlyLionsData() {
         if (latestGameEl) latestGameEl.textContent = latestGame;
         if (nextGameEl) nextGameEl.textContent = nextGame;
         
-        // Update game info status
-        if (gameInfoEl && !isLoading) {
+        // Update game info status - only show "No game scheduled today" if there's no game data
+        if (gameInfoEl && !isLoading && gameData === '🏈 No game today') {
             gameInfoEl.innerHTML = '<p>No game scheduled today</p>';
+        } else if (gameInfoEl && !isLoading) {
+            gameInfoEl.innerHTML = ''; // Clear the message when there's game data
         }
-    }, [prevGame, latestGame, nextGame, isLoading]);
+    }, [prevGame, latestGame, nextGame, isLoading, gameData]);
 
     return (
         <div>

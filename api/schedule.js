@@ -30,8 +30,8 @@ export const handler = async (event, context) => {
         console.log('Schedule request received');
 
         // Check cache first
-        const now = Date.now();
-        if (scheduleCache.data && (now - scheduleCache.timestamp) < scheduleCache.ttl) {
+        const currentTime = Date.now();
+        if (scheduleCache.data && (currentTime - scheduleCache.timestamp) < scheduleCache.ttl) {
             console.log('Returning cached schedule data');
             return {
                 statusCode: 200,
@@ -93,7 +93,7 @@ export const handler = async (event, context) => {
             latestGame: null,
             nextGame: null,
             season: {
-                type: 'preseason',
+                type: 'regular',
                 year: 2025
             }
         };
@@ -135,7 +135,7 @@ export const handler = async (event, context) => {
 
         // Cache the result
         scheduleCache.data = result;
-        scheduleCache.timestamp = now;
+        scheduleCache.timestamp = currentTime;
 
         return {
             statusCode: 200,
@@ -171,10 +171,10 @@ export const handler = async (event, context) => {
 };
 
 async function getSchedule() {
-    // Try 2025 preseason first, then 2025 regular season, then fall back to 2024
+    // Try 2025 regular season first (current season), then preseason, then fall back to 2024
     const urls = [
+        `${ESPN_API_BASE}/seasons/2025/types/2/teams/8/events`, // 2025 regular season (PRIORITY)
         `${ESPN_API_BASE}/seasons/2025/types/1/teams/8/events`, // 2025 preseason
-        `${ESPN_API_BASE}/seasons/2025/types/2/teams/8/events`, // 2025 regular season
         `${ESPN_API_BASE}/seasons/2024/types/2/teams/8/events`  // 2024 regular season
     ];
 
@@ -261,7 +261,7 @@ async function formatGame(game) {
                 opponent: opponentScore
             },
             result: result,
-            status: competition.status.type.name
+            status: competition.status?.type?.name || 'UNKNOWN'
         };
     } catch (error) {
         console.error('Error formatting game:', error);

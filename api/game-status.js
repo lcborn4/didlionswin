@@ -159,8 +159,9 @@ export const handler = async (event, context) => {
 };
 
 async function getSchedule() {
-    // Try 2025 preseason first, then fall back to 2024 regular season
+    // Try 2025 regular season first (current season), then preseason, then fall back to 2024
     const urls = [
+        `${ESPN_API_BASE}/seasons/2025/types/2/teams/8/events`, // 2025 regular season (PRIORITY)
         `${ESPN_API_BASE}/seasons/2025/types/1/teams/8/events`, // 2025 preseason
         `${ESPN_API_BASE}/seasons/2024/types/2/teams/8/events`  // 2024 regular season
     ];

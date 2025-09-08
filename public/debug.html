@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Debug API</title>
+</head>
+
+<body>
+    <h1>API Debug Test</h1>
+    <div id="status"></div>
+    <div id="schedule"></div>
+
+    <script>
+        async function testAPIs() {
+            const statusDiv = document.getElementById('status');
+            const scheduleDiv = document.getElementById('schedule');
+
+            try {
+                // Test game-status API
+                const statusResponse = await fetch('https://7mnzh94kp5.execute-api.us-east-1.amazonaws.com/api/game-status', {
+                    mode: 'cors',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
+                const statusData = await statusResponse.json();
+                statusDiv.innerHTML = '<h2>Game Status API:</h2><pre>' + JSON.stringify(statusData, null, 2) + '</pre>';
+
+                // Test schedule API
+                const scheduleResponse = await fetch('https://7mnzh94kp5.execute-api.us-east-1.amazonaws.com/api/schedule', {
+                    mode: 'cors',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
+                const scheduleData = await scheduleResponse.json();
+                scheduleDiv.innerHTML = '<h2>Schedule API:</h2><pre>' + JSON.stringify(scheduleData, null, 2) + '</pre>';
+
+            } catch (error) {
+                statusDiv.innerHTML = '<h2>Error:</h2><pre>' + error.message + '</pre>';
+            }
+        }
+
+        testAPIs();
+    </script>
+</body>
+
+</html>
