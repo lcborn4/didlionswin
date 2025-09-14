@@ -1,4 +1,5 @@
 import styles from "@/styles/Home.module.css";
+import Script from "next/script";
 
 // Static version with JavaScript enhancement
 export default function Home() {
@@ -49,7 +50,7 @@ export default function Home() {
       </div>
 
       {/* External JavaScript for dynamic updates */}
-      <script src="/js/dynamic-updater.js"></script>
+      <Script src="/js/dynamic-updater.js" strategy="afterInteractive" />
     </main>
   );
 }

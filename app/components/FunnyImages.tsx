@@ -94,7 +94,7 @@ export default function FunnyImages({ gameResult, isLoading }: FunnyImagesProps)
         setImageAlt(selectedImage.alt);
         setCurrentFact(selectedFact.fact);
         console.log(`Selected ${poolName} image: ${selectedImage.src} and fact: ${selectedFact.fact}`);
-    }, [gameResult, isLoading]);
+    }, [gameResult, isLoading]); // eslint-disable-line react-hooks/exhaustive-deps
 
     if (isLoading || !currentImage) {
         return null;

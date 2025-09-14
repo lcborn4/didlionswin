@@ -132,12 +132,12 @@ export const handler = async (event, context) => {
 
             // Sort by date and check for gaps
             recentGames.sort((a, b) => new Date(a.date) - new Date(b.date));
-            
+
             for (let i = 0; i < recentGames.length - 1; i++) {
                 const currentGameDate = new Date(recentGames[i].date);
                 const nextGameDate = new Date(recentGames[i + 1].date);
                 const daysBetween = (nextGameDate.getTime() - currentGameDate.getTime()) / (1000 * 60 * 60 * 24);
-                
+
                 // If there's a gap of 8-14 days and we're in the middle of it, it's likely a bye week
                 if (daysBetween >= 8 && daysBetween <= 14) {
                     const today = new Date();
