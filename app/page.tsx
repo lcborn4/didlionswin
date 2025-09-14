@@ -53,7 +53,7 @@ export default function Home() {
       <div id="game-images" style={{ textAlign: 'center', margin: '2rem 0' }}>
         <img src="/images/good/lionswin.jpg" alt="Lions win" style={{ maxWidth: '300px', height: 'auto' }} />
         <p style={{ marginTop: '1rem', fontSize: '1.2rem' }}>
-          💡 The Detroit Lions are the only NFL team to go 0-16 in a season (2008)
+          💡 The Detroit Lions have 4 NFL Championships: 1935, 1952, 1953, 1957
         </p>
       </div>
 

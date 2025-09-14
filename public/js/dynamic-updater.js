@@ -118,13 +118,43 @@ async function updateLionsData() {
             }
         }
         
-        // Update images
+        // Update images and facts
         const gameImagesEl = document.getElementById('game-images');
         if (gameImagesEl && latestGame) {
             if (latestGame.result === 'WIN') {
-                gameImagesEl.innerHTML = '<img src="/images/good/lionswin.jpg" alt="Lions win" style="max-width: 300px; height: auto;" /><p style="margin-top: 1rem; font-size: 1.2rem;">💡 The Detroit Lions are the only NFL team to go 0-16 in a season (2008)</p>';
+                // Random good images for wins
+                const goodImages = [
+                    '/images/good/lionswin.jpg',
+                    '/images/good/hutchinson_sack.jpg',
+                    '/images/good/cook_fumble.jpg',
+                    '/images/good/aslan-roar.gif'
+                ];
+                const goodFacts = [
+                    '💡 The Detroit Lions have 4 NFL Championships: 1935, 1952, 1953, 1957',
+                    '💡 The Detroit Lions All-time Rushing Leader: Barry Sanders 3,062 att, 15,269 yds, 99 TD',
+                    '💡 The Detroit Lions All-time Receiving Leader: Calvin Johnson 731 rec, 11,619 yds, 83 TD',
+                    '💡 The Detroit Lions All-time Passing Leader: Matthew Stafford 3,898/6,224, 45,109 yds, 282 TD'
+                ];
+                const randomImage = goodImages[Math.floor(Math.random() * goodImages.length)];
+                const randomFact = goodFacts[Math.floor(Math.random() * goodFacts.length)];
+                gameImagesEl.innerHTML = `<img src="${randomImage}" alt="Lions win" style="max-width: 300px; height: auto;" /><p style="margin-top: 1rem; font-size: 1.2rem;">${randomFact}</p>`;
             } else if (latestGame.result === 'LOSS') {
-                gameImagesEl.innerHTML = '<img src="/images/bad/kitty-cat.gif" alt="Lions loss" style="max-width: 300px; height: auto;" /><p style="margin-top: 1rem; font-size: 1.2rem;">💡 The Detroit Lions forced Barry Sanders into early retirement</p>';
+                // Random bad images for losses
+                const badImages = [
+                    '/images/bad/kitty-cat.gif',
+                    '/images/bad/bearsthanksgiving2021.jpeg',
+                    '/images/bad/dlwaf.jpg',
+                    '/images/bad/harrington.jpg'
+                ];
+                const badFacts = [
+                    '💡 The Detroit Lions forced Barry Sanders into early retirement',
+                    '💡 The Detroit Lions have the worst win percentage in NFL history',
+                    '💡 The Detroit Lions went 0-16 in 2008, the only team to do so',
+                    '💡 The Detroit Lions have never won a Super Bowl'
+                ];
+                const randomImage = badImages[Math.floor(Math.random() * badImages.length)];
+                const randomFact = badFacts[Math.floor(Math.random() * badFacts.length)];
+                gameImagesEl.innerHTML = `<img src="${randomImage}" alt="Lions loss" style="max-width: 300px; height: auto;" /><p style="margin-top: 1rem; font-size: 1.2rem;">${randomFact}</p>`;
             } else {
                 gameImagesEl.innerHTML = '<img src="/images/out.gif" alt="No game" style="max-width: 300px; height: auto;" />';
             }
@@ -175,7 +205,7 @@ async function updateLionsData() {
         
         const gameImagesEl = document.getElementById('game-images');
         if (gameImagesEl) {
-            gameImagesEl.innerHTML = '<img src="/images/good/lionswin.jpg" alt="Lions win" style="max-width: 300px; height: auto;" /><p style="margin-top: 1rem; font-size: 1.2rem;">💡 The Detroit Lions are the only NFL team to go 0-16 in a season (2008)</p>';
+            gameImagesEl.innerHTML = '<img src="/images/good/lionswin.jpg" alt="Lions win" style="max-width: 300px; height: auto;" /><p style="margin-top: 1rem; font-size: 1.2rem;">💡 The Detroit Lions have 4 NFL Championships: 1935, 1952, 1953, 1957</p>';
         }
     }
 }
