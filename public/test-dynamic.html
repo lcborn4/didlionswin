@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Dynamic Updates</title>
+</head>
+<body>
+    <h1>Test Dynamic Image/Fact Loading</h1>
+    
+    <div id="game-images" style="text-align: center; margin: 2rem 0;">
+        <img src="/images/good/lionswin.jpg" alt="Lions win" style="max-width: 300px; height: auto;" />
+        <p style="margin-top: 1rem; font-size: 1.2rem;">
+            💡 The Detroit Lions All-time Rushing Leader: Barry Sanders 3,062 att, 15,269 yds, 99 TD
+        </p>
+    </div>
+    
+    <button onclick="testRandomContent()">Test Random Content</button>
+    <button onclick="testGoodContent()">Test Good Content</button>
+    <button onclick="testBadContent()">Test Bad Content</button>
+    
+    <script>
+        async function testRandomContent() {
+            const gameImagesEl = document.getElementById('game-images');
+            if (gameImagesEl) {
+                try {
+                    const [imagesResponse, factsResponse] = await Promise.all([
+                        fetch('/assets/good_images.json'),
+                        fetch('/assets/good_facts.json')
+                    ]);
+                    const goodImages = await imagesResponse.json();
+                    const goodFacts = await factsResponse.json();
+                    
+                    const randomImage = goodImages[Math.floor(Math.random() * goodImages.length)];
+                    const randomFact = goodFacts[Math.floor(Math.random() * goodFacts.length)];
+                    gameImagesEl.innerHTML = `<img src="${randomImage.image}" alt="Lions win" style="max-width: 300px; height: auto;" /><p style="margin-top: 1rem; font-size: 1.2rem;">💡 ${randomFact.fact}</p>`;
+                    console.log('Updated with random content:', randomImage.image, randomFact.fact);
+                } catch (error) {
+                    console.error('Error loading good images/facts:', error);
+                }
+            }
+        }
+        
+        async function testGoodContent() {
+            const gameImagesEl = document.getElementById('game-images');
+            if (gameImagesEl) {
+                try {
+                    const [imagesResponse, factsResponse] = await Promise.all([
+                        fetch('/assets/good_images.json'),
+                        fetch('/assets/good_facts.json')
+                    ]);
+                    const goodImages = await imagesResponse.json();
+                    const goodFacts = await factsResponse.json();
+                    
+                    const randomImage = goodImages[Math.floor(Math.random() * goodImages.length)];
+                    const randomFact = goodFacts[Math.floor(Math.random() * goodFacts.length)];
+                    gameImagesEl.innerHTML = `<img src="${randomImage.image}" alt="Lions win" style="max-width: 300px; height: auto;" /><p style="margin-top: 1rem; font-size: 1.2rem;">💡 ${randomFact.fact}</p>`;
+                } catch (error) {
+                    console.error('Error loading good images/facts:', error);
+                    gameImagesEl.innerHTML = '<img src="/images/good/lionswin.jpg" alt="Lions win" style="max-width: 300px; height: auto;" /><p style="margin-top: 1rem; font-size: 1.2rem;">💡 The Detroit Lions have 4 NFL Championships: 1935, 1952, 1953, 1957</p>';
+                }
+            }
+        }
+        
+        async function testBadContent() {
+            const gameImagesEl = document.getElementById('game-images');
+            if (gameImagesEl) {
+                try {
+                    const [imagesResponse, factsResponse] = await Promise.all([
+                        fetch('/assets/bad_images.json'),
+                        fetch('/assets/bad_facts.json')
+                    ]);
+                    const badImages = await imagesResponse.json();
+                    const badFacts = await factsResponse.json();
+                    
+                    const randomImage = badImages[Math.floor(Math.random() * badImages.length)];
+                    const randomFact = badFacts[Math.floor(Math.random() * badFacts.length)];
+                    gameImagesEl.innerHTML = `<img src="${randomImage.image}" alt="Lions loss" style="max-width: 300px; height: auto;" /><p style="margin-top: 1rem; font-size: 1.2rem;">💡 ${randomFact.fact}</p>`;
+                } catch (error) {
+                    console.error('Error loading bad images/facts:', error);
+                    gameImagesEl.innerHTML = '<img src="/images/bad/kitty-cat.gif" alt="Lions loss" style="max-width: 300px; height: auto;" /><p style="margin-top: 1rem; font-size: 1.2rem;">💡 The Detroit Lions forced Barry Sanders into early retirement</p>';
+                }
+            }
+        }
+        
+        // Auto-test on page load
+        window.onload = function() {
+            console.log('Page loaded, testing random content...');
+            testRandomContent();
+        };
+    </script>
+</body>
+</html>

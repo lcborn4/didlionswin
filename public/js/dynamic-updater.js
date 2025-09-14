@@ -130,7 +130,7 @@ async function updateLionsData() {
                     ]);
                     const goodImages = await imagesResponse.json();
                     const goodFacts = await factsResponse.json();
-                    
+
                     const randomImage = goodImages[Math.floor(Math.random() * goodImages.length)];
                     const randomFact = goodFacts[Math.floor(Math.random() * goodFacts.length)];
                     gameImagesEl.innerHTML = `<img src="${randomImage.image}" alt="Lions win" style="max-width: 300px; height: auto;" /><p style="margin-top: 1rem; font-size: 1.2rem;">💡 ${randomFact.fact}</p>`;
@@ -147,7 +147,7 @@ async function updateLionsData() {
                     ]);
                     const badImages = await imagesResponse.json();
                     const badFacts = await factsResponse.json();
-                    
+
                     const randomImage = badImages[Math.floor(Math.random() * badImages.length)];
                     const randomFact = badFacts[Math.floor(Math.random() * badFacts.length)];
                     gameImagesEl.innerHTML = `<img src="${randomImage.image}" alt="Lions loss" style="max-width: 300px; height: auto;" /><p style="margin-top: 1rem; font-size: 1.2rem;">💡 ${randomFact.fact}</p>`;
@@ -219,9 +219,36 @@ async function updateLionsData() {
     }
 }
 
+// Function to randomize static content (always runs)
+async function randomizeStaticContent() {
+    console.log('Randomizing static content...');
+    const gameImagesEl = document.getElementById('game-images');
+    if (gameImagesEl) {
+        try {
+            const [imagesResponse, factsResponse] = await Promise.all([
+                fetch('/assets/good_images.json'),
+                fetch('/assets/good_facts.json')
+            ]);
+            const goodImages = await imagesResponse.json();
+            const goodFacts = await factsResponse.json();
+            
+            const randomImage = goodImages[Math.floor(Math.random() * goodImages.length)];
+            const randomFact = goodFacts[Math.floor(Math.random() * goodFacts.length)];
+            gameImagesEl.innerHTML = `<img src="${randomImage.image}" alt="Lions win" style="max-width: 300px; height: auto;" /><p style="margin-top: 1rem; font-size: 1.2rem;">💡 ${randomFact.fact}</p>`;
+            console.log('Updated static content with:', randomImage.image, randomFact.fact);
+        } catch (error) {
+            console.error('Error randomizing static content:', error);
+        }
+    }
+}
+
 // Run on page load
 if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', updateLionsData);
+    document.addEventListener('DOMContentLoaded', () => {
+        randomizeStaticContent();
+        updateLionsData();
+    });
 } else {
+    randomizeStaticContent();
     updateLionsData();
 }
