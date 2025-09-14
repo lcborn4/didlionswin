@@ -205,14 +205,20 @@ async function updateLionsData() {
 
         const gameImagesEl = document.getElementById('game-images');
         if (gameImagesEl) {
-            // Try to load a random good fact for the static fallback
+            // Try to load random image and fact for the static fallback
             try {
-                const response = await fetch('/assets/good_facts.json');
-                const goodFacts = await response.json();
+                const [imagesResponse, factsResponse] = await Promise.all([
+                    fetch('/assets/good_images.json'),
+                    fetch('/assets/good_facts.json')
+                ]);
+                const goodImages = await imagesResponse.json();
+                const goodFacts = await factsResponse.json();
+                
+                const randomImage = goodImages[Math.floor(Math.random() * goodImages.length)];
                 const randomFact = goodFacts[Math.floor(Math.random() * goodFacts.length)];
-                gameImagesEl.innerHTML = `<img src="/images/good/lionswin.jpg" alt="Lions win" style="max-width: 300px; height: auto;" /><p style="margin-top: 1rem; font-size: 1.2rem;">💡 ${randomFact.fact}</p>`;
+                gameImagesEl.innerHTML = `<img src="${randomImage.image}" alt="Lions win" style="max-width: 300px; height: auto;" /><p style="margin-top: 1rem; font-size: 1.2rem;">💡 ${randomFact.fact}</p>`;
             } catch (error) {
-                console.error('Error loading good facts for fallback:', error);
+                console.error('Error loading good images/facts for fallback:', error);
                 gameImagesEl.innerHTML = '<img src="/images/good/lionswin.jpg" alt="Lions win" style="max-width: 300px; height: auto;" /><p style="margin-top: 1rem; font-size: 1.2rem;">💡 The Detroit Lions have 4 NFL Championships: 1935, 1952, 1953, 1957</p>';
             }
         }
