@@ -4,7 +4,18 @@ import styles from "@/styles/Home.module.css";
 export default function Home() {
   return (
     <>
-      <script src="/js/simple-test.js" async></script>
+      <script dangerouslySetInnerHTML={{
+        __html: `
+          console.log('Inline script executing...');
+          setTimeout(() => {
+            const gameImagesEl = document.getElementById('game-images');
+            if (gameImagesEl) {
+              console.log('Updating images with inline script...');
+              gameImagesEl.innerHTML = '<img src="/images/good/aslan-roar.gif" alt="Lions win" style="max-width: 300px; height: auto;" /><p style="margin-top: 1rem; font-size: 1.2rem;">💡 TEST: Inline JavaScript is working!</p>';
+            }
+          }, 100);
+        `
+      }} />
       <main className={styles.main}>
       <div>
         <h1>Did The Detroit Lions Win?</h1>
