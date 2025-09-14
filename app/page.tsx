@@ -53,7 +53,7 @@ export default function Home() {
       <div id="game-images" style={{ textAlign: 'center', margin: '2rem 0' }}>
         <img src="/images/good/lionswin.jpg" alt="Lions win" style={{ maxWidth: '300px', height: 'auto' }} />
         <p style={{ marginTop: '1rem', fontSize: '1.2rem' }}>
-          💡 The Detroit Lions have 4 NFL Championships: 1935, 1952, 1953, 1957
+          💡 The Detroit Lions All-time Rushing Leader: Barry Sanders 3,062 att, 15,269 yds, 99 TD
         </p>
       </div>
 
