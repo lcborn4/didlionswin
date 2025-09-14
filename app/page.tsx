@@ -4,7 +4,7 @@ import styles from "@/styles/Home.module.css";
 export default function Home() {
   return (
     <>
-      <script src="/js/dynamic-updater.js" async></script>
+      <script src="/js/simple-test.js" async></script>
       <main className={styles.main}>
       <div>
         <h1>Did The Detroit Lions Win?</h1>
