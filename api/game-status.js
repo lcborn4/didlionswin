@@ -107,13 +107,45 @@ export const handler = async (event, context) => {
             }
         }
 
-        // Check if it's off-season
+        // Check if it's off-season or bye week
         if (!currentGame && nextGame) {
             const nextGameDate = new Date(nextGame.date);
             const daysUntilNext = (nextGameDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24);
 
             if (daysUntilNext > 30) {
                 gameStatus.season.isOffSeason = true;
+            } else if (daysUntilNext > 7) {
+                // Likely a bye week - more than 7 days until next game
+                gameStatus.season.isByeWeek = true;
+            }
+        }
+
+        // Check if we're in a bye week by looking at the schedule pattern
+        if (!currentGame && !gameStatus.season.isOffSeason) {
+            // Look for gaps in the schedule that indicate bye weeks
+            const recentGames = await Promise.all(
+                schedule.items.slice(0, 10).map(async (item) => {
+                    const response = await fetch(item.$ref);
+                    return await response.json();
+                })
+            );
+
+            // Sort by date and check for gaps
+            recentGames.sort((a, b) => new Date(a.date) - new Date(b.date));
+            
+            for (let i = 0; i < recentGames.length - 1; i++) {
+                const currentGameDate = new Date(recentGames[i].date);
+                const nextGameDate = new Date(recentGames[i + 1].date);
+                const daysBetween = (nextGameDate.getTime() - currentGameDate.getTime()) / (1000 * 60 * 60 * 24);
+                
+                // If there's a gap of 8-14 days and we're in the middle of it, it's likely a bye week
+                if (daysBetween >= 8 && daysBetween <= 14) {
+                    const today = new Date();
+                    if (today >= currentGameDate && today <= nextGameDate) {
+                        gameStatus.season.isByeWeek = true;
+                        break;
+                    }
+                }
             }
         }
 
