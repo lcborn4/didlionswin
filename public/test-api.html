@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>API Test</title>
+</head>
+<body>
+    <h1>API Test Page</h1>
+    <div id="status">Loading...</div>
+    <div id="schedule">Loading...</div>
+    
+    <script>
+        async function testAPIs() {
+            try {
+                console.log('Testing APIs...');
+                
+                const [statusResponse, scheduleResponse] = await Promise.all([
+                    fetch('https://7mnzh94kp5.execute-api.us-east-1.amazonaws.com/api/game-status', {
+                        mode: 'cors',
+                        headers: { 'Content-Type': 'application/json' }
+                    }),
+                    fetch('https://7mnzh94kp5.execute-api.us-east-1.amazonaws.com/api/schedule', {
+                        mode: 'cors',
+                        headers: { 'Content-Type': 'application/json' }
+                    })
+                ]);
+                
+                console.log('Status response:', statusResponse.status);
+                console.log('Schedule response:', scheduleResponse.status);
+                
+                if (!statusResponse.ok || !scheduleResponse.ok) {
+                    throw new Error(`API Error: Status ${statusResponse.status}, Schedule ${scheduleResponse.status}`);
+                }
+                
+                const statusData = await statusResponse.json();
+                const scheduleData = await scheduleResponse.json();
+                
+                console.log('Status data:', statusData);
+                console.log('Schedule data:', scheduleData);
+                
+                document.getElementById('status').innerHTML = `
+                    <h3>Game Status:</h3>
+                    <p>Has Live Game: ${statusData.hasLiveGame}</p>
+                    <p>Is Game Day: ${statusData.isGameDay}</p>
+                    <p>Is Bye Week: ${statusData.season?.isByeWeek || false}</p>
+                    <p>Is Off Season: ${statusData.season?.isOffSeason || false}</p>
+                `;
+                
+                document.getElementById('schedule').innerHTML = `
+                    <h3>Schedule:</h3>
+                    <p>Latest Game: ${scheduleData.latestGame?.name || 'None'}</p>
+                    <p>Result: ${scheduleData.latestGame?.result || 'None'}</p>
+                    <p>Score: Lions ${scheduleData.latestGame?.score?.lions || 0}, ${scheduleData.latestGame?.opponent || 'Opponent'} ${scheduleData.latestGame?.score?.opponent || 0}</p>
+                    <p>Next Game: ${scheduleData.nextGame?.name || 'None'}</p>
+                `;
+                
+            } catch (error) {
+                console.error('Error:', error);
+                document.getElementById('status').innerHTML = `<p style="color: red;">Error: ${error.message}</p>`;
+            }
+        }
+        
+        testAPIs();
+    </script>
+</body>
+</html>

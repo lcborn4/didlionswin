@@ -107,6 +107,8 @@ export default function DynamicLionsData() {
             setIsLoading(true);
             setError(null);
 
+            console.log('Starting API fetch...');
+
             // Fetch both APIs in parallel
             const [statusResponse, scheduleResponse] = await Promise.all([
                 fetch('https://7mnzh94kp5.execute-api.us-east-1.amazonaws.com/api/game-status', {
@@ -119,6 +121,11 @@ export default function DynamicLionsData() {
                 })
             ]);
 
+            console.log('API responses:', { 
+                status: statusResponse.status, 
+                schedule: scheduleResponse.status 
+            });
+
             if (!statusResponse.ok || !scheduleResponse.ok) {
                 throw new Error(`API Error: Status ${statusResponse.status}, Schedule ${scheduleResponse.status}`);
             }
@@ -126,10 +133,12 @@ export default function DynamicLionsData() {
             const statusData = await statusResponse.json();
             const scheduleData = await scheduleResponse.json();
 
+            console.log('API data received:', { statusData, scheduleData });
+
             setGameStatus(statusData);
             setScheduleData(scheduleData);
 
-            console.log('Data loaded:', { statusData, scheduleData });
+            console.log('State updated successfully');
 
             // Set up polling if needed
             setupPolling(statusData);
@@ -139,7 +148,7 @@ export default function DynamicLionsData() {
             setError(err instanceof Error ? err.message : 'Unknown error');
             
             // Set fallback data
-            setGameStatus({
+            const fallbackStatus = {
                 hasLiveGame: false,
                 isGameDay: false,
                 currentGame: null,
@@ -148,9 +157,34 @@ export default function DynamicLionsData() {
                 pollInterval: 300000,
                 season: { isOffSeason: false, type: 'Regular Season' },
                 timestamp: new Date().toISOString()
-            });
+            };
+            
+            setGameStatus(fallbackStatus);
+            
+            // Set fallback schedule data
+            const fallbackSchedule = {
+                previousGame: {
+                    name: "Detroit Lions at Green Bay Packers",
+                    score: { lions: 13, opponent: 27 },
+                    result: "LOSS"
+                },
+                latestGame: {
+                    name: "Chicago Bears at Detroit Lions",
+                    score: { lions: 52, opponent: 21 },
+                    result: "WIN"
+                },
+                nextGame: {
+                    name: "Detroit Lions at Baltimore Ravens",
+                    date: "2025-09-23T00:15Z"
+                },
+                season: { type: 'regular', year: 2025 }
+            };
+            
+            setScheduleData(fallbackSchedule);
+            console.log('Fallback data set');
         } finally {
             setIsLoading(false);
+            console.log('Loading completed');
         }
     };
 
@@ -197,7 +231,7 @@ export default function DynamicLionsData() {
             }
             isPollingRef.current = false;
         };
-    }, []);
+    }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
     // Update DOM elements
     useEffect(() => {
