@@ -1,11 +1,10 @@
 import styles from "@/styles/Home.module.css";
-import Script from "next/script";
 
 // Static version with JavaScript enhancement
 export default function Home() {
   return (
     <>
-      <Script src="/js/dynamic-updater.js" strategy="afterInteractive" />
+      <script src="/js/dynamic-updater.js" async></script>
       <main className={styles.main}>
       <div>
         <h1>Did The Detroit Lions Win?</h1>
