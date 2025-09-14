@@ -14,3 +14,4 @@ pnpm dev
 
 ### NextJs
 [NextJs info](https://github.com/lcborn4/didlionswin/blob/master/Documentation/NextJs.md)
+# Force rebuild Sun Sep 14 19:21:31 EDT 2025
