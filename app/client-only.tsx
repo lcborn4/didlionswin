@@ -10,6 +10,7 @@ export default function ClientOnlyLionsData() {
     const [nextGame, setNextGame] = useState('Loading next game...');
     const [isLoading, setIsLoading] = useState(false); // Start with false for faster perceived load
     const [gameResult, setGameResult] = useState<'WIN' | 'LOSS' | 'TIE' | null>(null);
+    const [scheduleData, setScheduleData] = useState<any>(null);
 
     useEffect(() => {
         console.log('Client component mounted');
@@ -65,6 +66,7 @@ export default function ClientOnlyLionsData() {
                     });
                     scheduleData = await scheduleResponse.json();
                     console.log('Schedule loaded:', scheduleData);
+                    setScheduleData(scheduleData);
                 } catch (scheduleError) {
                     console.warn('Schedule API failed, using fallback data:', scheduleError);
                     scheduleData = {
@@ -85,6 +87,7 @@ export default function ClientOnlyLionsData() {
                             date: "2025-09-14T17:00Z"
                         }
                     };
+                    setScheduleData(scheduleData);
                 }
                 
                 // Update latest game from schedule data
@@ -209,28 +212,61 @@ export default function ClientOnlyLionsData() {
         const prevGameEl = document.getElementById('prev-game');
         const latestGameEl = document.getElementById('latest-game');
         const nextGameEl = document.getElementById('next-game');
-        const gameInfoEl = document.getElementById('game-info');
+        const gameResultEl = document.getElementById('game-result');
+        const lionsScoreEl = document.getElementById('lions-score');
+        const opponentScoreEl = document.getElementById('opponent-score');
+        const gameImagesEl = document.getElementById('game-images');
         
         if (prevGameEl) prevGameEl.textContent = prevGame;
         if (latestGameEl) latestGameEl.textContent = latestGame;
         if (nextGameEl) nextGameEl.textContent = nextGame;
+        if (gameResultEl) gameResultEl.textContent = gameData;
         
-        // Update game info status - only show "No game scheduled today" if there's no game data
-        if (gameInfoEl && !isLoading && gameData === '🏈 No game today') {
-            gameInfoEl.innerHTML = '<p>No game scheduled today</p>';
-        } else if (gameInfoEl && !isLoading) {
-            gameInfoEl.innerHTML = ''; // Clear the message when there's game data
+        // Update scores if we have game result data
+        if (gameResult && scheduleData) {
+            if (scheduleData.latestGame && scheduleData.latestGame.score) {
+                const score = scheduleData.latestGame.score;
+                if (lionsScoreEl) lionsScoreEl.textContent = score.lions.toString();
+                if (opponentScoreEl) opponentScoreEl.textContent = score.opponent.toString();
+            }
+        } else if (gameData.includes('LIVE') && scheduleData && scheduleData.latestGame && scheduleData.latestGame.score) {
+            // Show live scores
+            const score = scheduleData.latestGame.score;
+            if (lionsScoreEl) lionsScoreEl.textContent = score.lions.toString();
+            if (opponentScoreEl) opponentScoreEl.textContent = score.opponent.toString();
         }
-    }, [prevGame, latestGame, nextGame, isLoading, gameData]);
+    }, [prevGame, latestGame, nextGame, gameData, gameResult, scheduleData, isLoading]);
+
+    // Determine the main answer (YES/NO)
+    const getMainAnswer = () => {
+        if (gameResult === 'WIN') {
+            return { text: '✅ YES', color: '#00aa00' };
+        } else if (gameResult === 'LOSS') {
+            return { text: '❌ NO', color: '#cc0000' };
+        } else if (gameResult === 'TIE') {
+            return { text: '🤝 TIE', color: '#ff8800' };
+        } else if (gameData.includes('LIVE')) {
+            return { text: '🔴 LIVE', color: '#ff0000' };
+        } else if (gameData.includes('Upcoming')) {
+            return { text: '⏰ SOON', color: '#0066cc' };
+        } else if (gameData.includes('No game today') || gameData.includes('Off-season')) {
+            return { text: '😴 N/A', color: '#666666' };
+        } else {
+            return { text: '❓ ?', color: '#666666' };
+        }
+    };
+
+    const mainAnswer = getMainAnswer();
 
     return (
         <div>
-            <div 
-                className={`game-result ${isLoading ? 'loading' : ''}`}
-                id="game-result"
-            >
-                {gameData}
-            </div>
+            <h2 style={{ 
+                color: mainAnswer.color, 
+                fontSize: '2.5rem', 
+                margin: '1rem 0' 
+            }}>
+                {mainAnswer.text}
+            </h2>
             
             <FunnyImages gameResult={gameResult} isLoading={isLoading} />
         </div>
