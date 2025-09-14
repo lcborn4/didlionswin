@@ -1,10 +1,15 @@
 import styles from "@/styles/Home.module.css";
 import Script from "next/script";
+import Head from "next/head";
 
 // Static version with JavaScript enhancement
 export default function Home() {
   return (
-    <main className={styles.main}>
+    <>
+      <Head>
+        <script src="/js/dynamic-updater.js" async></script>
+      </Head>
+      <main className={styles.main}>
       <div>
         <h1>Did The Detroit Lions Win?</h1>
         <div id="main-answer">
@@ -49,8 +54,7 @@ export default function Home() {
         Loading...
       </div>
 
-      {/* External JavaScript for dynamic updates */}
-      <Script src="/js/dynamic-updater.js" strategy="afterInteractive" />
-    </main>
+      </main>
+    </>
   );
 }
