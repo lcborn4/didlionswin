@@ -1,21 +1,15 @@
 import styles from "@/styles/Home.module.css";
+import goodImages from "@/assets/good_images.json";
+import goodFacts from "@/assets/good_facts.json";
 
-// Static version with JavaScript enhancement
+// Static version with build-time randomization
 export default function Home() {
+  // Randomly select image and fact at build time
+  const randomImage = goodImages[Math.floor(Math.random() * goodImages.length)];
+  const randomFact = goodFacts[Math.floor(Math.random() * goodFacts.length)];
+
   return (
     <>
-      <script dangerouslySetInnerHTML={{
-        __html: `
-          console.log('Inline script executing...');
-          setTimeout(() => {
-            const gameImagesEl = document.getElementById('game-images');
-            if (gameImagesEl) {
-              console.log('Updating images with inline script...');
-              gameImagesEl.innerHTML = '<img src="/images/good/aslan-roar.gif" alt="Lions win" style="max-width: 300px; height: auto;" /><p style="margin-top: 1rem; font-size: 1.2rem;">💡 TEST: Inline JavaScript is working!</p>';
-            }
-          }, 100);
-        `
-      }} />
       <main className={styles.main}>
       <div>
         <h1>Did The Detroit Lions Win?</h1>
@@ -56,11 +50,11 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Dynamic image and fact */}
+      {/* Randomized image and fact */}
       <div id="game-images" style={{ textAlign: 'center', margin: '2rem 0' }}>
-        <img src="/images/good/lionswin.jpg" alt="Lions win" style={{ maxWidth: '300px', height: 'auto' }} />
+        <img src={randomImage.image} alt="Lions win" style={{ maxWidth: '300px', height: 'auto' }} />
         <p style={{ marginTop: '1rem', fontSize: '1.2rem' }}>
-          💡 The Detroit Lions All-time Rushing Leader: Barry Sanders 3,062 att, 15,269 yds, 99 TD
+          💡 {randomFact.fact}
         </p>
       </div>
 
