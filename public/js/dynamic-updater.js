@@ -213,7 +213,7 @@ async function updateLionsData() {
                 ]);
                 const goodImages = await imagesResponse.json();
                 const goodFacts = await factsResponse.json();
-                
+
                 const randomImage = goodImages[Math.floor(Math.random() * goodImages.length)];
                 const randomFact = goodFacts[Math.floor(Math.random() * goodFacts.length)];
                 gameImagesEl.innerHTML = `<img src="${randomImage.image}" alt="Lions win" style="max-width: 300px; height: auto;" /><p style="margin-top: 1rem; font-size: 1.2rem;">💡 ${randomFact.fact}</p>`;
