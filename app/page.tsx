@@ -6,9 +6,8 @@ export default function Home() {
     <>
       <script dangerouslySetInnerHTML={{
         __html: `
-          // Inline randomization script
+          // Clean randomization script - no console logs, React-friendly DOM updates
           (function() {
-            console.log('=== RANDOMIZATION SCRIPT STARTED ===');
             const goodImages = [
               '/images/good/aslan-roar.gif',
               '/images/good/cook_fumble.jpg',
@@ -35,36 +34,35 @@ export default function Home() {
             ];
             
             function randomizeContent() {
-              console.log('randomizeContent function called!');
               const gameImagesEl = document.getElementById('game-images');
-              console.log('gameImagesEl:', gameImagesEl);
               if (gameImagesEl) {
                 const randomImage = goodImages[Math.floor(Math.random() * goodImages.length)];
                 const randomFact = goodFacts[Math.floor(Math.random() * goodFacts.length)];
-                console.log('Selected random image:', randomImage);
-                console.log('Selected random fact:', randomFact);
-                gameImagesEl.innerHTML = '<img src="' + randomImage + '" alt="Lions win" style="max-width: 300px; height: auto;" /><p style="margin-top: 1rem; font-size: 1.2rem;">💡 ' + randomFact + '</p>';
-                console.log('Content updated!');
-              } else {
-                console.log('Could not find game-images element');
+                
+                // React-friendly DOM update - only update if content is still static
+                if (gameImagesEl.innerHTML.includes('lionswin.jpg') || gameImagesEl.innerHTML.includes('The Detroit Lions have 4 NFL Championships')) {
+                  const imgEl = gameImagesEl.querySelector('img');
+                  const pEl = gameImagesEl.querySelector('p');
+                  
+                  if (imgEl) imgEl.src = randomImage;
+                  if (pEl) pEl.textContent = '💡 ' + randomFact;
+                }
               }
             }
             
-            // Wait for DOM to be ready
-            if (document.readyState === 'loading') {
-              document.addEventListener('DOMContentLoaded', randomizeContent);
-            } else {
-              randomizeContent();
-            }
-            
-            // Fallback timeout in case DOM ready doesn't fire
-            setTimeout(function() {
-              const gameImagesEl = document.getElementById('game-images');
-              if (gameImagesEl && gameImagesEl.innerHTML.includes('lionswin.jpg')) {
-                console.log('Fallback: DOM not ready yet, trying again...');
+            // Wait for DOM to be ready, then randomize
+            function initRandomization() {
+              if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', randomizeContent);
+              } else {
                 randomizeContent();
               }
-            }, 100);
+              
+              // Fallback timeout for edge cases
+              setTimeout(randomizeContent, 100);
+            }
+            
+            initRandomization();
           })();
         `
       }} />
