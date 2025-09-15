@@ -50,8 +50,21 @@ export default function Home() {
               }
             }
             
-            // Run immediately
-            randomizeContent();
+            // Wait for DOM to be ready
+            if (document.readyState === 'loading') {
+              document.addEventListener('DOMContentLoaded', randomizeContent);
+            } else {
+              randomizeContent();
+            }
+            
+            // Fallback timeout in case DOM ready doesn't fire
+            setTimeout(function() {
+              const gameImagesEl = document.getElementById('game-images');
+              if (gameImagesEl && gameImagesEl.innerHTML.includes('lionswin.jpg')) {
+                console.log('Fallback: DOM not ready yet, trying again...');
+                randomizeContent();
+              }
+            }, 100);
           })();
         `
       }} />
