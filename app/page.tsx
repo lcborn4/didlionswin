@@ -23,12 +23,12 @@ export default function Home() {
             
             const goodFacts = [
               'The Detroit Lions first started in July 12, 1930 as the Portsmouth Spartans',
-              'The Detroit Lions\' first season was in 1930',
+              'The Detroit Lions first season was in 1930',
               'The Detroit Lions have 4 NFL Championships: 1935, 1952, 1953, 1957',
               'The Detroit Lions have 5 NFL Western Division Championships: 1935, 1952, 1953, 1954, 1957',
               'The Detroit Lions have 3 NFC Central Division Championships: 1983, 1991, 1993',
-              'The Detroit Lions\' all time record: 579-702-34',
-              'The Detroit Lions\' winningest coach is Wayne Fontes: 66-67-0',
+              'The Detroit Lions all time record: 579-702-34',
+              'The Detroit Lions winningest coach is Wayne Fontes: 66-67-0',
               'The Detroit Lions All-time Passing Leader: Matthew Stafford 3,898/6,224, 45,109 yds, 282 TD',
               'The Detroit Lions All-time Rushing Leader: Barry Sanders 3,062 att, 15,269 yds, 99 TD',
               'The Detroit Lions All-time Receiving Leader: Calvin Johnson 731 rec, 11,619 yds, 83 TD'
