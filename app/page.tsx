@@ -1,10 +1,10 @@
-import styles from "@/styles/Home.module.css";
+"use client";
 
-// CSS-only randomization using multiple elements with random display
+import styles from "@/styles/Home.module.css";
+import { useState, useEffect } from "react";
+
+// Client-side randomization using React hooks
 export default function Home() {
-  // Generate random number for CSS selection (0-8 for 9 images)
-  const randomIndex = Math.floor(Math.random() * 9);
-  
   const imageFacts = [
     { image: '/images/good/aslan-roar.gif', fact: 'The Detroit Lions first started in July 12, 1930 as the Portsmouth Spartans' },
     { image: '/images/good/cook_fumble.jpg', fact: 'The Detroit Lions first season was in 1930' },
@@ -17,18 +17,16 @@ export default function Home() {
     { image: '/images/good/out.gif', fact: 'The Detroit Lions All-time Rushing Leader: Barry Sanders 3,062 att, 15,269 yds, 99 TD' }
   ];
 
+  const [selectedContent, setSelectedContent] = useState(imageFacts[0]); // Default to first item
+
+  useEffect(() => {
+    // Randomize on component mount (each page load/refresh)
+    const randomIndex = Math.floor(Math.random() * imageFacts.length);
+    setSelectedContent(imageFacts[randomIndex]);
+  }, [imageFacts]); // Include imageFacts in dependencies
+
   return (
     <>
-      <style dangerouslySetInnerHTML={{
-        __html: `
-          .random-content {
-            display: none;
-          }
-          .random-content:nth-child(${randomIndex + 1}) {
-            display: block;
-          }
-        `
-      }} />
       <main className={styles.main}>
       <div>
         <h1>Did The Detroit Lions Win?</h1>
@@ -69,16 +67,12 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Randomized images and facts using CSS */}
+      {/* Randomized image and fact */}
       <div style={{ textAlign: 'center', margin: '2rem 0' }}>
-        {imageFacts.map((item, index) => (
-          <div key={index} className="random-content">
-            <img src={item.image} alt="Lions win" style={{ maxWidth: '300px', height: 'auto' }} />
-            <p style={{ marginTop: '1rem', fontSize: '1.2rem' }}>
-              💡 {item.fact}
-            </p>
-          </div>
-        ))}
+        <img src={selectedContent.image} alt="Lions win" style={{ maxWidth: '300px', height: 'auto' }} />
+        <p style={{ marginTop: '1rem', fontSize: '1.2rem' }}>
+          💡 {selectedContent.fact}
+        </p>
       </div>
 
       </main>
