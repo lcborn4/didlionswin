@@ -1,69 +1,32 @@
 import styles from "@/styles/Home.module.css";
 
-// Static version with client-side randomization
+// CSS-only randomization using multiple elements with random display
 export default function Home() {
+  // Generate random number for CSS selection (0-8 for 9 images)
+  const randomIndex = Math.floor(Math.random() * 9);
+  
+  const imageFacts = [
+    { image: '/images/good/aslan-roar.gif', fact: 'The Detroit Lions first started in July 12, 1930 as the Portsmouth Spartans' },
+    { image: '/images/good/cook_fumble.jpg', fact: 'The Detroit Lions first season was in 1930' },
+    { image: '/images/good/GdgB9HaWYAAP_BW.jpeg', fact: 'The Detroit Lions have 4 NFL Championships: 1935, 1952, 1953, 1957' },
+    { image: '/images/good/GdgLgm5XcAAKXl0.jpeg', fact: 'The Detroit Lions have 5 NFL Western Division Championships: 1935, 1952, 1953, 1954, 1957' },
+    { image: '/images/good/hutchinson_sack.jpg', fact: 'The Detroit Lions have 3 NFC Central Division Championships: 1983, 1991, 1993' },
+    { image: '/images/good/IMG_1090.jpeg', fact: 'The Detroit Lions all time record: 579-702-34' },
+    { image: '/images/good/IMG_8922.GIF', fact: 'The Detroit Lions winningest coach is Wayne Fontes: 66-67-0' },
+    { image: '/images/good/lionswin.jpg', fact: 'The Detroit Lions All-time Passing Leader: Matthew Stafford 3,898/6,224, 45,109 yds, 282 TD' },
+    { image: '/images/good/out.gif', fact: 'The Detroit Lions All-time Rushing Leader: Barry Sanders 3,062 att, 15,269 yds, 99 TD' }
+  ];
+
   return (
     <>
-      <script dangerouslySetInnerHTML={{
+      <style dangerouslySetInnerHTML={{
         __html: `
-          // Clean randomization script - no console logs, React-friendly DOM updates
-          (function() {
-            const goodImages = [
-              '/images/good/aslan-roar.gif',
-              '/images/good/cook_fumble.jpg',
-              '/images/good/GdgB9HaWYAAP_BW.jpeg',
-              '/images/good/GdgLgm5XcAAKXl0.jpeg',
-              '/images/good/hutchinson_sack.jpg',
-              '/images/good/IMG_1090.jpeg',
-              '/images/good/IMG_8922.GIF',
-              '/images/good/lionswin.jpg',
-              '/images/good/out.gif'
-            ];
-            
-            const goodFacts = [
-              'The Detroit Lions first started in July 12, 1930 as the Portsmouth Spartans',
-              'The Detroit Lions first season was in 1930',
-              'The Detroit Lions have 4 NFL Championships: 1935, 1952, 1953, 1957',
-              'The Detroit Lions have 5 NFL Western Division Championships: 1935, 1952, 1953, 1954, 1957',
-              'The Detroit Lions have 3 NFC Central Division Championships: 1983, 1991, 1993',
-              'The Detroit Lions all time record: 579-702-34',
-              'The Detroit Lions winningest coach is Wayne Fontes: 66-67-0',
-              'The Detroit Lions All-time Passing Leader: Matthew Stafford 3,898/6,224, 45,109 yds, 282 TD',
-              'The Detroit Lions All-time Rushing Leader: Barry Sanders 3,062 att, 15,269 yds, 99 TD',
-              'The Detroit Lions All-time Receiving Leader: Calvin Johnson 731 rec, 11,619 yds, 83 TD'
-            ];
-            
-            function randomizeContent() {
-              const gameImagesEl = document.getElementById('game-images');
-              if (gameImagesEl) {
-                const randomImage = goodImages[Math.floor(Math.random() * goodImages.length)];
-                const randomFact = goodFacts[Math.floor(Math.random() * goodFacts.length)];
-                
-                // React-friendly DOM update - only update if content is still static
-                if (gameImagesEl.innerHTML.includes('lionswin.jpg') || gameImagesEl.innerHTML.includes('The Detroit Lions have 4 NFL Championships')) {
-                  const imgEl = gameImagesEl.querySelector('img');
-                  const pEl = gameImagesEl.querySelector('p');
-                  
-                  if (imgEl) imgEl.src = randomImage;
-                  if (pEl) pEl.textContent = '💡 ' + randomFact;
-                }
-              }
-            }
-            
-            // Wait for DOM to be ready, then randomize
-            function initRandomization() {
-              if (document.readyState === 'loading') {
-                document.addEventListener('DOMContentLoaded', randomizeContent);
-              } else {
-                randomizeContent();
-              }
-              
-              // Fallback timeout for edge cases
-              setTimeout(randomizeContent, 100);
-            }
-            
-            initRandomization();
-          })();
+          .random-content {
+            display: none;
+          }
+          .random-content:nth-child(${randomIndex + 1}) {
+            display: block;
+          }
         `
       }} />
       <main className={styles.main}>
@@ -106,12 +69,16 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Randomized image and fact */}
-      <div id="game-images" style={{ textAlign: 'center', margin: '2rem 0' }}>
-        <img src="/images/good/lionswin.jpg" alt="Lions win" style={{ maxWidth: '300px', height: 'auto' }} />
-        <p style={{ marginTop: '1rem', fontSize: '1.2rem' }}>
-          💡 The Detroit Lions have 4 NFL Championships: 1935, 1952, 1953, 1957
-        </p>
+      {/* Randomized images and facts using CSS */}
+      <div style={{ textAlign: 'center', margin: '2rem 0' }}>
+        {imageFacts.map((item, index) => (
+          <div key={index} className="random-content">
+            <img src={item.image} alt="Lions win" style={{ maxWidth: '300px', height: 'auto' }} />
+            <p style={{ marginTop: '1rem', fontSize: '1.2rem' }}>
+              💡 {item.fact}
+            </p>
+          </div>
+        ))}
       </div>
 
       </main>
