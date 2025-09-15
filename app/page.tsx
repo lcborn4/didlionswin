@@ -8,6 +8,7 @@ export default function Home() {
         __html: `
           // Inline randomization script
           (function() {
+            console.log('=== RANDOMIZATION SCRIPT STARTED ===');
             const goodImages = [
               '/images/good/aslan-roar.gif',
               '/images/good/cook_fumble.jpg',
@@ -34,11 +35,18 @@ export default function Home() {
             ];
             
             function randomizeContent() {
+              console.log('randomizeContent function called!');
               const gameImagesEl = document.getElementById('game-images');
+              console.log('gameImagesEl:', gameImagesEl);
               if (gameImagesEl) {
                 const randomImage = goodImages[Math.floor(Math.random() * goodImages.length)];
                 const randomFact = goodFacts[Math.floor(Math.random() * goodFacts.length)];
+                console.log('Selected random image:', randomImage);
+                console.log('Selected random fact:', randomFact);
                 gameImagesEl.innerHTML = '<img src="' + randomImage + '" alt="Lions win" style="max-width: 300px; height: auto;" /><p style="margin-top: 1rem; font-size: 1.2rem;">💡 ' + randomFact + '</p>';
+                console.log('Content updated!');
+              } else {
+                console.log('Could not find game-images element');
               }
             }
             
