@@ -1,6 +1,6 @@
 {
   "name": "didlionswin",
-  "version": "0.2.4",
+  "version": "0.3.0",
   "description": "Did The Detroit Lions Win? - Next.js app deployed via Serverless Framework",
   "type": "module",
   "private": true,

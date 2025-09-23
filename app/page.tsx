@@ -46,9 +46,18 @@ export default function Home() {
         
         // Load game status and live score data
         const [statusResponse, liveResponse, scheduleResponse] = await Promise.all([
-          fetch(`${API_BASE}/game-status`).catch(() => null),
-          fetch(`${API_BASE}/live-score`).catch(() => null),
-          fetch(`${API_BASE}/schedule`).catch(() => null)
+          fetch(`${API_BASE}/game-status`).catch((err) => {
+            console.warn('Game status API failed:', err);
+            return null;
+          }),
+          fetch(`${API_BASE}/live-score`).catch((err) => {
+            console.warn('Live score API failed:', err);
+            return null;
+          }),
+          fetch(`${API_BASE}/schedule`).catch((err) => {
+            console.warn('Schedule API failed:', err);
+            return null;
+          })
         ]);
 
         let statusData = null;
@@ -56,18 +65,36 @@ export default function Home() {
         let scheduleData = null;
 
         if (statusResponse?.ok) {
-          statusData = await statusResponse.json();
-          console.log('Status data:', statusData);
+          try {
+            statusData = await statusResponse.json();
+            console.log('Status data:', statusData);
+          } catch (err) {
+            console.warn('Failed to parse status data:', err);
+          }
+        } else {
+          console.warn('Status response not ok:', statusResponse?.status);
         }
 
         if (liveResponse?.ok) {
-          liveData = await liveResponse.json();
-          console.log('Live data:', liveData);
+          try {
+            liveData = await liveResponse.json();
+            console.log('Live data:', liveData);
+          } catch (err) {
+            console.warn('Failed to parse live data:', err);
+          }
+        } else {
+          console.warn('Live response not ok:', liveResponse?.status);
         }
 
         if (scheduleResponse?.ok) {
-          scheduleData = await scheduleResponse.json();
-          console.log('Schedule data:', scheduleData);
+          try {
+            scheduleData = await scheduleResponse.json();
+            console.log('Schedule data:', scheduleData);
+          } catch (err) {
+            console.warn('Failed to parse schedule data:', err);
+          }
+        } else {
+          console.warn('Schedule response not ok:', scheduleResponse?.status);
         }
 
         // Update game data based on what we received
@@ -81,17 +108,17 @@ export default function Home() {
 
       } catch (error) {
         console.error('Error loading live data:', error);
-        // Fallback to static data
+        // Fallback to static data (Ravens game result)
         setGameData({
           mainAnswer: '✅ YES',
           mainAnswerColor: '#00aa00',
-          gameResult: '🏈 Game Over: Chicago Bears at Detroit Lions',
-          lionsScore: '52',
-          opponentScore: '21',
-          opponent: 'Bears',
-          prevGame: '❌ Detroit Lions at Green Bay Packers - Lions 13, Packers 27',
-          latestGame: '✅ Chicago Bears at Detroit Lions - Lions 52, Bears 21',
-          nextGame: '🏈 at Baltimore Ravens - 9/22/2025',
+          gameResult: '🏈 Game Over: Detroit Lions at Baltimore Ravens',
+          lionsScore: '38',
+          opponentScore: '30',
+          opponent: 'Ravens',
+          prevGame: '✅ Chicago Bears at Detroit Lions - Lions 52, Bears 21',
+          latestGame: '✅ Detroit Lions at Baltimore Ravens - Lions 38, Ravens 30',
+          nextGame: '🏈 Cleveland Browns at Detroit Lions - 9/28/2025',
           isLive: false
         });
       } finally {
@@ -123,8 +150,29 @@ export default function Home() {
     let opponent = 'Loading...';
     let isLive = false;
 
-    // Check if we have live game data
-    if (liveData && liveData.result) {
+    // Prioritize schedule data for current/latest game info
+    if (scheduleData && scheduleData.currentGame) {
+      const currentGame = scheduleData.currentGame;
+      opponent = currentGame.opponent;
+      lionsScore = currentGame.score.lions.toString();
+      opponentScore = currentGame.score.opponent.toString();
+      
+      if (currentGame.result === 'WIN') {
+        mainAnswer = '✅ YES';
+        mainAnswerColor = '#00aa00';
+        gameResult = `🏈 Game Over: ${currentGame.name}`;
+      } else if (currentGame.result === 'LOSS') {
+        mainAnswer = '❌ NO';
+        mainAnswerColor = '#cc0000';
+        gameResult = `🏈 Game Over: ${currentGame.name}`;
+      } else if (currentGame.result === 'TIE') {
+        mainAnswer = '🤝 TIE';
+        mainAnswerColor = '#ff8800';
+        gameResult = `🏈 Game Over: ${currentGame.name}`;
+      }
+    }
+    // Check if we have live game data (for live games only)
+    else if (liveData && liveData.result && liveData.isLive) {
       isLive = liveData.isLive;
       opponent = liveData.opponent;
       lionsScore = liveData.score.lions.toString();
@@ -179,21 +227,30 @@ export default function Home() {
     let latestGame = '🏈 Loading...';
     let nextGame = '🏈 Loading...';
 
-    if (scheduleData && scheduleData.games) {
-      const games = scheduleData.games;
-      if (games.previous) {
-        const prev = games.previous;
+    if (scheduleData) {
+      // Previous game
+      if (scheduleData.previousGame) {
+        const prev = scheduleData.previousGame;
         const prevResult = prev.result === 'WIN' ? '✅' : prev.result === 'LOSS' ? '❌' : '🤝';
         prevGame = `${prevResult} ${prev.name} - Lions ${prev.score.lions}, ${prev.opponent} ${prev.score.opponent}`;
       }
-      if (games.latest) {
-        const latest = games.latest;
+      
+      // Latest game
+      if (scheduleData.latestGame) {
+        const latest = scheduleData.latestGame;
         const latestResult = latest.result === 'WIN' ? '✅' : latest.result === 'LOSS' ? '❌' : '🤝';
         latestGame = `${latestResult} ${latest.name} - Lions ${latest.score.lions}, ${latest.opponent} ${latest.score.opponent}`;
       }
-      if (games.next) {
-        const next = games.next;
-        nextGame = `🏈 ${next.name} - ${next.date}`;
+      
+      // Next game
+      if (scheduleData.nextGame) {
+        const next = scheduleData.nextGame;
+        const gameDate = new Date(next.date).toLocaleDateString('en-US', {
+          month: 'numeric',
+          day: 'numeric',
+          year: 'numeric'
+        });
+        nextGame = `🏈 ${next.name} - ${gameDate}`;
       }
     }
 

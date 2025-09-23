@@ -10,7 +10,7 @@ if (document.readyState === 'loading') {
 
 function testJavaScript() {
     console.log('DOM is ready, testing JavaScript execution...');
-    
+
     const gameImagesEl = document.getElementById('game-images');
     if (gameImagesEl) {
         console.log('Found game-images element, updating...');
