@@ -24,18 +24,48 @@ const API_BASE = 'https://7mnzh94kp5.execute-api.us-east-1.amazonaws.com/api';
 export default function Home() {
   const [selectedContent, setSelectedContent] = useState(imageFacts[0]);
   const [gameData, setGameData] = useState({
-    mainAnswer: '🏈 Loading...',
+    mainAnswer: '🏈 Loading',
     mainAnswerColor: '#666',
-    gameResult: '🏈 Loading game data...',
+    gameResult: '🏈 Loading game data',
     lionsScore: '--',
     opponentScore: '--',
-    opponent: 'Loading...',
-    prevGame: '🏈 Loading...',
-    latestGame: '🏈 Loading...',
-    nextGame: '🏈 Loading...',
+    opponent: 'Loading',
+    prevGame: '🏈 Loading',
+    latestGame: '🏈 Loading',
+    nextGame: '🏈 Loading',
     isLive: false
   });
   const [loading, setLoading] = useState(true);
+  const [loadingDots, setLoadingDots] = useState('');
+
+  // Animated loading dots effect
+  useEffect(() => {
+    if (!loading) return;
+    
+    const interval = setInterval(() => {
+      setLoadingDots(prev => {
+        if (prev === '...') return '';
+        return prev + '.';
+      });
+    }, 500); // Change every 500ms
+
+    return () => clearInterval(interval);
+  }, [loading]);
+
+  // Update loading display when dots change
+  useEffect(() => {
+    if (loading) {
+      setGameData(prev => ({
+        ...prev,
+        mainAnswer: `🏈 Loading${loadingDots}`,
+        gameResult: `🏈 Loading game data${loadingDots}`,
+        opponent: `Loading${loadingDots}`,
+        prevGame: `🏈 Loading${loadingDots}`,
+        latestGame: `🏈 Loading${loadingDots}`,
+        nextGame: `🏈 Loading${loadingDots}`
+      }));
+    }
+  }, [loadingDots, loading]);
 
   // Load live game data
   useEffect(() => {
@@ -143,12 +173,12 @@ export default function Home() {
 
   function updateGameDisplay(statusData: any, liveData: any, scheduleData: any) {
     // Determine main answer and styling
-    let mainAnswer = '🏈 Loading...';
+    let mainAnswer = `🏈 Loading${loadingDots}`;
     let mainAnswerColor = '#666';
-    let gameResult = '🏈 Loading game data...';
+    let gameResult = `🏈 Loading game data${loadingDots}`;
     let lionsScore = '--';
     let opponentScore = '--';
-    let opponent = 'Loading...';
+    let opponent = `Loading${loadingDots}`;
     let isLive = false;
 
     // Prioritize schedule data for current/latest game info
@@ -224,9 +254,9 @@ export default function Home() {
     }
 
     // Update previous/latest/next games
-    let prevGame = '🏈 Loading...';
-    let latestGame = '🏈 Loading...';
-    let nextGame = '🏈 Loading...';
+    let prevGame = `🏈 Loading${loadingDots}`;
+    let latestGame = `🏈 Loading${loadingDots}`;
+    let nextGame = `🏈 Loading${loadingDots}`;
 
     if (scheduleData) {
       // Previous game
