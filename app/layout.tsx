@@ -8,6 +8,8 @@ export default function RootLayout({
     return (
         <html lang="en">
             <head>
+                <title>Did The Detroit Lions Win?</title>
+                <meta name="description" content="Check if the Detroit Lions won their latest game! Real-time scores and game updates." />
                 <style>{`
                     .game-result {
                         font-size: 3rem;
