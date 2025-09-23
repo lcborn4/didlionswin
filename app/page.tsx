@@ -188,24 +188,28 @@ export default function Home() {
     let isLive = false;
 
     // Prioritize schedule data for current/latest game info
-    if (scheduleData && scheduleData.currentGame) {
-      const currentGame = scheduleData.currentGame;
-      opponent = currentGame.opponent;
-      lionsScore = currentGame.score.lions.toString();
-      opponentScore = currentGame.score.opponent.toString();
+    if (scheduleData) {
+      // Use currentGame if available, otherwise use latestGame
+      const gameToShow = scheduleData.currentGame || scheduleData.latestGame;
       
-      if (currentGame.result === 'WIN') {
-        mainAnswer = '✅ YES';
-        mainAnswerColor = '#00aa00';
-        gameResult = `🏈 Game Over: ${currentGame.name}`;
-      } else if (currentGame.result === 'LOSS') {
-        mainAnswer = '❌ NO';
-        mainAnswerColor = '#cc0000';
-        gameResult = `🏈 Game Over: ${currentGame.name}`;
-      } else if (currentGame.result === 'TIE') {
-        mainAnswer = '🤝 TIE';
-        mainAnswerColor = '#ff8800';
-        gameResult = `🏈 Game Over: ${currentGame.name}`;
+      if (gameToShow) {
+        opponent = gameToShow.opponent;
+        lionsScore = gameToShow.score.lions.toString();
+        opponentScore = gameToShow.score.opponent.toString();
+        
+        if (gameToShow.result === 'WIN') {
+          mainAnswer = '✅ YES';
+          mainAnswerColor = '#00aa00';
+          gameResult = `🏈 Game Over: ${gameToShow.name}`;
+        } else if (gameToShow.result === 'LOSS') {
+          mainAnswer = '❌ NO';
+          mainAnswerColor = '#cc0000';
+          gameResult = `🏈 Game Over: ${gameToShow.name}`;
+        } else if (gameToShow.result === 'TIE') {
+          mainAnswer = '🤝 TIE';
+          mainAnswerColor = '#ff8800';
+          gameResult = `🏈 Game Over: ${gameToShow.name}`;
+        }
       }
     }
     // Check if we have live game data (for live games only)
