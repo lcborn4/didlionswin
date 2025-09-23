@@ -42,10 +42,12 @@ export default function Home() {
   useEffect(() => {
     if (!loading) return;
     
+    console.log('Starting loading animation...');
     const interval = setInterval(() => {
       setLoadingDots(prev => {
-        if (prev === '...') return '';
-        return prev + '.';
+        const newDots = prev === '...' ? '' : prev + '.';
+        console.log('Loading dots:', newDots);
+        return newDots;
       });
     }, 500); // Change every 500ms
 
@@ -75,7 +77,10 @@ export default function Home() {
       try {
         console.log('Loading live game data...');
         
-        // Load game status and live score data
+        // Add minimum loading time to see animation
+        const minLoadingTime = new Promise(resolve => setTimeout(resolve, 2000));
+        
+        // Load game status and live score data (with minimum loading time)
         const [statusResponse, liveResponse, scheduleResponse] = await Promise.all([
           fetch(`${API_BASE}/game-status`).catch((err) => {
             console.warn('Game status API failed:', err);
@@ -88,7 +93,8 @@ export default function Home() {
           fetch(`${API_BASE}/schedule`).catch((err) => {
             console.warn('Schedule API failed:', err);
             return null;
-          })
+          }),
+          minLoadingTime // Ensure minimum 2 second loading time
         ]);
 
         let statusData = null;
