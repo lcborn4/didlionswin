@@ -37,6 +37,7 @@ export default function Home() {
   });
   const [loading, setLoading] = useState(true);
   const [loadingDots, setLoadingDots] = useState('');
+  const [lastUpdated, setLastUpdated] = useState<string | null>(null);
 
   // Animated loading dots effect
   useEffect(() => {
@@ -127,6 +128,10 @@ export default function Home() {
           try {
             scheduleData = await scheduleResponse.json();
             console.log('Schedule data:', scheduleData);
+            // Store the timestamp from the API response
+            if (scheduleData.timestamp) {
+              setLastUpdated(scheduleData.timestamp);
+            }
           } catch (err) {
             console.warn('Failed to parse schedule data:', err);
           }
@@ -145,17 +150,17 @@ export default function Home() {
 
       } catch (error) {
         console.error('Error loading live data:', error);
-        // Fallback to static data (Ravens game result)
+        // Fallback when API fails - show error state
         setGameData({
-          mainAnswer: '✅ YES',
-          mainAnswerColor: '#00aa00',
-          gameResult: '🏈 Game Over: Detroit Lions at Baltimore Ravens',
-          lionsScore: '38',
-          opponentScore: '30',
-          opponent: 'Ravens',
-          prevGame: '✅ Chicago Bears at Detroit Lions - Lions 52, Bears 21',
-          latestGame: '✅ Detroit Lions at Baltimore Ravens - Lions 38, Ravens 30',
-          nextGame: '🏈 Cleveland Browns at Detroit Lions - 9/28/2025',
+          mainAnswer: '❓ ERROR',
+          mainAnswerColor: '#666',
+          gameResult: '🏈 Unable to load game data',
+          lionsScore: '--',
+          opponentScore: '--',
+          opponent: 'Unknown',
+          prevGame: '🏈 Unable to load previous game',
+          latestGame: '🏈 Unable to load latest game',
+          nextGame: '🏈 Unable to load next game',
           isLive: false
         });
       } finally {
@@ -272,26 +277,59 @@ export default function Home() {
       // Previous game
       if (scheduleData.previousGame) {
         const prev = scheduleData.previousGame;
+        const prevDate = new Date(prev.date);
         const prevResult = prev.result === 'WIN' ? '✅' : prev.result === 'LOSS' ? '❌' : '🤝';
-        prevGame = `${prevResult} ${prev.name} - Lions ${prev.score.lions}, ${prev.opponent} ${prev.score.opponent}`;
+        const prevGameDate = prevDate.toLocaleDateString('en-US', {
+          month: 'numeric',
+          day: 'numeric',
+          year: 'numeric'
+        });
+        prevGame = `${prevResult} ${prev.name} - ${prevGameDate} - Lions ${prev.score.lions}, ${prev.opponent} ${prev.score.opponent}`;
       }
       
       // Latest game
       if (scheduleData.latestGame) {
         const latest = scheduleData.latestGame;
+        const latestDate = new Date(latest.date);
         const latestResult = latest.result === 'WIN' ? '✅' : latest.result === 'LOSS' ? '❌' : '🤝';
-        latestGame = `${latestResult} ${latest.name} - Lions ${latest.score.lions}, ${latest.opponent} ${latest.score.opponent}`;
+        const latestGameDate = latestDate.toLocaleDateString('en-US', {
+          month: 'numeric',
+          day: 'numeric',
+          year: 'numeric'
+        });
+        latestGame = `${latestResult} ${latest.name} - ${latestGameDate} - Lions ${latest.score.lions}, ${latest.opponent} ${latest.score.opponent}`;
       }
       
       // Next game
       if (scheduleData.nextGame) {
         const next = scheduleData.nextGame;
-        const gameDate = new Date(next.date).toLocaleDateString('en-US', {
-          month: 'numeric',
-          day: 'numeric',
-          year: 'numeric'
-        });
-        nextGame = `🏈 ${next.name} - ${gameDate}`;
+        const nextDate = new Date(next.date);
+        const now = new Date();
+        
+        // Check if this is a placeholder (no real game info)
+        const isPlaceholder = !next.opponent || 
+                              next.opponent === 'TBD' || 
+                              next.name.includes('Regular Season') ||
+                              !next.name.includes('Detroit Lions');
+        
+        // Only show the game if it's actually in the future (at least 1 hour from now)
+        if (nextDate.getTime() > now.getTime() + (60 * 60 * 1000)) {
+          if (isPlaceholder) {
+            // It's a placeholder, show TBD message
+            nextGame = '🏈 Next game TBD';
+          } else {
+            // It's a real game, show it
+            const gameDate = nextDate.toLocaleDateString('en-US', {
+              month: 'numeric',
+              day: 'numeric',
+              year: 'numeric'
+            });
+            nextGame = `🏈 ${next.name} - ${gameDate}`;
+          }
+        } else {
+          // Game is in the past or too soon, show placeholder
+          nextGame = '🏈 Next game TBD';
+        }
       }
     }
 
@@ -362,6 +400,27 @@ export default function Home() {
           💡 {selectedContent.fact}
         </p>
       </div>
+
+      {/* Last updated timestamp */}
+      {lastUpdated && (
+        <div style={{ 
+          textAlign: 'center', 
+          marginTop: '3rem', 
+          paddingTop: '2rem',
+          borderTop: '1px solid #e0e0e0',
+          fontSize: '0.875rem',
+          color: '#666'
+        }}>
+          <p>Last updated: {new Date(lastUpdated).toLocaleString('en-US', {
+            month: 'long',
+            day: 'numeric',
+            year: 'numeric',
+            hour: 'numeric',
+            minute: '2-digit',
+            timeZoneName: 'short'
+          })}</p>
+        </div>
+      )}
 
       </main>
     </>

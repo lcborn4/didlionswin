@@ -8,8 +8,12 @@ const ESPN_API_BASE = 'https://sports.core.api.espn.com/v2/sports/football/leagu
 let scheduleCache = {
     data: null,
     timestamp: 0,
-    ttl: 30 * 60 * 1000 // 30 minutes
+    ttl: 5 * 60 * 1000 // 5 minutes (reduced for fresher data)
 };
+
+// Clear cache on module load to ensure fresh data
+scheduleCache.data = null;
+scheduleCache.timestamp = 0;
 
 export const handler = async (event, context) => {
     // Handle preflight OPTIONS requests
@@ -29,9 +33,20 @@ export const handler = async (event, context) => {
     try {
         console.log('Schedule request received');
 
-        // Check cache first
+        // Check for cache bypass query parameter
+        const queryParams = event.queryStringParameters || {};
+        const bypassCache = queryParams.nocache === 'true' || queryParams.clearCache === 'true';
+
+        // Clear cache if requested
+        if (bypassCache) {
+            console.log('Cache bypass requested - clearing cache');
+            scheduleCache.data = null;
+            scheduleCache.timestamp = 0;
+        }
+
+        // Check cache first (unless bypassed)
         const currentTime = Date.now();
-        if (scheduleCache.data && (currentTime - scheduleCache.timestamp) < scheduleCache.ttl) {
+        if (!bypassCache && scheduleCache.data && (currentTime - scheduleCache.timestamp) < scheduleCache.ttl) {
             console.log('Returning cached schedule data');
             return {
                 statusCode: 200,
@@ -53,8 +68,10 @@ export const handler = async (event, context) => {
         const schedule = await getSchedule();
         const now = new Date();
 
-        // Get only the first 10 games for performance (should cover recent + upcoming)
-        const limitedItems = schedule.items.slice(0, 10);
+        // Process all available games to ensure we capture all games including the most recent ones
+        // NFL teams play ~17 regular season games + preseason, so fetch all games to be safe
+        const gamesToFetch = schedule.items.length; // Fetch ALL games to ensure we don't miss any
+        const limitedItems = schedule.items.slice(0, gamesToFetch);
         console.log(`Processing ${limitedItems.length} games out of ${schedule.items.length} total`);
 
         // Get games in parallel for speed
@@ -65,21 +82,35 @@ export const handler = async (event, context) => {
             })
         );
 
-        // Sort games by date
+        // Sort games by date (oldest to newest)
         allGames.sort((a, b) => new Date(a.date) - new Date(b.date));
 
-        // Find current position in schedule
+        // Find latest, previous, and next games based on current date
         let currentIndex = -1;
-        let latestCompletedIndex = -1;
+        let nextUpcomingIndex = -1;
+        let mostRecentCompletedGame = null;
+        let mostRecentCompletedTime = 0;
+
+        // Use current date/time to determine game positions
+        const nowTime = now.getTime();
 
         for (let i = 0; i < allGames.length; i++) {
             const gameDate = new Date(allGames[i].date);
-            if (gameDate <= now) {
-                latestCompletedIndex = i;
+            const gameTime = gameDate.getTime();
+
+            // Next game = the first upcoming game (in the future from current date)
+            if (nextUpcomingIndex === -1 && gameTime > nowTime) {
+                nextUpcomingIndex = i;
+            }
+
+            // Latest game = the most recent completed game (closest to now, but in the past)
+            if (gameTime <= nowTime && gameTime > mostRecentCompletedTime) {
+                mostRecentCompletedGame = allGames[i];
+                mostRecentCompletedTime = gameTime;
             }
 
             // Check if this is today's game (within 4 hours)
-            const timeDiff = Math.abs(gameDate.getTime() - now.getTime());
+            const timeDiff = Math.abs(gameTime - nowTime);
             const hoursDiff = timeDiff / (1000 * 60 * 60);
             if (hoursDiff <= 4) {
                 currentIndex = i;
@@ -87,6 +118,7 @@ export const handler = async (event, context) => {
         }
 
         // Determine previous, current, and next games
+        const currentYear = getCurrentSeasonYear();
         const result = {
             previousGame: null,
             currentGame: null,
@@ -94,18 +126,34 @@ export const handler = async (event, context) => {
             nextGame: null,
             season: {
                 type: 'regular',
-                year: 2025
+                year: currentYear
             }
         };
 
-        // Latest completed game
-        if (latestCompletedIndex >= 0) {
-            result.latestGame = await formatGame(allGames[latestCompletedIndex]);
-        }
+        // Latest completed game = most recently completed game (before current date)
+        if (mostRecentCompletedGame) {
+            result.latestGame = await formatGame(mostRecentCompletedGame);
 
-        // Previous game (before latest completed)
-        if (latestCompletedIndex > 0) {
-            result.previousGame = await formatGame(allGames[latestCompletedIndex - 1]);
+            // Previous game = the game that occurred before the latest game
+            // Search through all games to find the one just before the latest game's date
+            const latestGameDate = new Date(mostRecentCompletedGame.date);
+            let previousGame = null;
+            let previousGameTime = 0;
+
+            for (let i = 0; i < allGames.length; i++) {
+                const gameDate = new Date(allGames[i].date);
+                const gameTime = gameDate.getTime();
+
+                // Find the game that's before the latest game but closest to it
+                if (gameTime < latestGameDate.getTime() && gameTime > previousGameTime) {
+                    previousGame = allGames[i];
+                    previousGameTime = gameTime;
+                }
+            }
+
+            if (previousGame) {
+                result.previousGame = await formatGame(previousGame);
+            }
         }
 
         // Current game (if any today)
@@ -113,24 +161,91 @@ export const handler = async (event, context) => {
             result.currentGame = await formatGame(allGames[currentIndex]);
         }
 
-        // Next upcoming game
-        const nextIndex = latestCompletedIndex + 1;
-        if (nextIndex < allGames.length) {
-            result.nextGame = await formatGame(allGames[nextIndex]);
+        // Next game = the upcoming game (first game in the future)
+        if (nextUpcomingIndex >= 0) {
+            const nextGameDate = new Date(allGames[nextUpcomingIndex].date);
+            // Double-check that this game is actually in the future
+            if (nextGameDate.getTime() > nowTime) {
+                result.nextGame = await formatGame(allGames[nextUpcomingIndex]);
+            } else {
+                // Game is in the past, check if there are more games to fetch
+                console.log('Next game found is in the past, checking for more games...');
+                // Try fetching more games if available
+                if (schedule.items.length > gamesToFetch) {
+                    // Fetch additional games to find future ones
+                    const additionalItems = schedule.items.slice(gamesToFetch, Math.min(schedule.items.length, gamesToFetch + 10));
+                    const additionalGames = await Promise.all(
+                        additionalItems.map(async (item) => {
+                            const response = await fetch(item.$ref);
+                            return await response.json();
+                        })
+                    );
+                    // Sort and find next future game
+                    additionalGames.sort((a, b) => new Date(a.date) - new Date(b.date));
+                    for (const game of additionalGames) {
+                        const gameDate = new Date(game.date);
+                        if (gameDate.getTime() > nowTime) {
+                            result.nextGame = await formatGame(game);
+                            break;
+                        }
+                    }
+                }
+                // If still no future game found, show next season placeholder
+                if (!result.nextGame) {
+                    const nextSeasonYear = currentYear + 1;
+                    result.nextGame = {
+                        name: `Regular Season ${nextSeasonYear}`,
+                        date: `${nextSeasonYear}-09-07T00:00Z`,
+                        status: 'SCHEDULED',
+                        opponent: 'TBD'
+                    };
+                }
+            }
         } else {
-            // No more preseason games, check regular season
-            result.nextGame = {
-                name: 'Regular Season 2025',
-                date: '2025-09-07T00:00Z', // Approximate start
-                status: 'SCHEDULED',
-                opponent: 'TBD'
-            };
+            // No future game found in initial batch, try fetching more games
+            if (schedule.items.length > gamesToFetch) {
+                console.log('No future game in first batch, fetching more games...');
+                const additionalItems = schedule.items.slice(gamesToFetch, Math.min(schedule.items.length, gamesToFetch + 10));
+                const additionalGames = await Promise.all(
+                    additionalItems.map(async (item) => {
+                        const response = await fetch(item.$ref);
+                        return await response.json();
+                    })
+                );
+                // Sort and find next future game
+                additionalGames.sort((a, b) => new Date(a.date) - new Date(b.date));
+                for (const game of additionalGames) {
+                    const gameDate = new Date(game.date);
+                    if (gameDate.getTime() > nowWithBuffer.getTime()) {
+                        result.nextGame = await formatGame(game);
+                        break;
+                    }
+                }
+            }
+            // If still no future game found, show next season placeholder
+            if (!result.nextGame) {
+                const nextSeasonYear = currentYear + 1;
+                result.nextGame = {
+                    name: `Regular Season ${nextSeasonYear}`,
+                    date: `${nextSeasonYear}-09-07T00:00Z`,
+                    status: 'SCHEDULED',
+                    opponent: 'TBD'
+                };
+            }
         }
 
         console.log('Schedule processed:', {
             total: allGames.length,
-            latest: latestCompletedIndex,
-            current: currentIndex
+            latestGame: mostRecentCompletedGame ? {
+                date: new Date(mostRecentCompletedGame.date).toISOString(),
+                name: mostRecentCompletedGame.name
+            } : 'none',
+            nextGame: nextUpcomingIndex >= 0 && allGames[nextUpcomingIndex] ? {
+                date: new Date(allGames[nextUpcomingIndex].date).toISOString(),
+                name: allGames[nextUpcomingIndex].name
+            } : 'none',
+            current: currentIndex,
+            nowTime: new Date().toISOString()
         });
 
         // Cache the result
@@ -170,13 +285,52 @@ export const handler = async (event, context) => {
     }
 };
 
+// Helper function to determine current NFL season year
+// NFL season spans two calendar years (Sept - Feb)
+function getCurrentSeasonYear() {
+    const now = new Date();
+    const month = now.getMonth() + 1; // 1-12
+    const year = now.getFullYear();
+
+    // NFL regular season is Sept (9) - Jan (1), playoffs through Feb (2)
+    // If we're in Jan-Feb, we're still in the previous year's season
+    if (month <= 2) {
+        return year - 1;
+    }
+    // March-August: previous season ended, next season hasn't started
+    // But check current year for preseason games starting in August
+    if (month <= 8) {
+        return year;
+    }
+    // September-December: current year's season
+    return year;
+}
+
 async function getSchedule() {
-    // Try 2025 regular season first (current season), then preseason, then fall back to 2024
-    const urls = [
-        `${ESPN_API_BASE}/seasons/2025/types/2/teams/8/events`, // 2025 regular season (PRIORITY)
-        `${ESPN_API_BASE}/seasons/2025/types/1/teams/8/events`, // 2025 preseason
-        `${ESPN_API_BASE}/seasons/2024/types/2/teams/8/events`  // 2024 regular season
-    ];
+    const currentYear = getCurrentSeasonYear();
+    const previousYear = currentYear - 1;
+    const nextYear = currentYear + 1;
+    const now = new Date();
+    const month = now.getMonth() + 1; // 1-12
+
+    // During regular season (Sept-Feb), prioritize regular season games
+    // During offseason (Mar-Aug), include preseason games
+    const isRegularSeason = month >= 9 || month <= 2;
+
+    // Build URL list based on season
+    const urls = [];
+
+    if (isRegularSeason) {
+        // Regular season: prioritize current year regular season, skip preseason
+        urls.push(`${ESPN_API_BASE}/seasons/${currentYear}/types/2/teams/8/events`); // Current year regular season (PRIORITY)
+        urls.push(`${ESPN_API_BASE}/seasons/${previousYear}/types/2/teams/8/events`); // Previous year regular season (for Jan-Feb)
+        urls.push(`${ESPN_API_BASE}/seasons/${nextYear}/types/2/teams/8/events`); // Next year (if late in current season)
+    } else {
+        // Offseason: include preseason games for upcoming season
+        urls.push(`${ESPN_API_BASE}/seasons/${currentYear}/types/2/teams/8/events`); // Current year regular season
+        urls.push(`${ESPN_API_BASE}/seasons/${currentYear}/types/1/teams/8/events`); // Current year preseason
+        urls.push(`${ESPN_API_BASE}/seasons/${previousYear}/types/2/teams/8/events`); // Previous year regular season
+    }
 
     let combinedSchedule = { items: [] };
 

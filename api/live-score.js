@@ -65,11 +65,38 @@ export const handler = async (event, context) => {
     }
 };
 
+// Helper function to determine current NFL season year
+// NFL season spans two calendar years (Sept - Feb)
+function getCurrentSeasonYear() {
+    const now = new Date();
+    const month = now.getMonth() + 1; // 1-12
+    const year = now.getFullYear();
+    
+    // NFL regular season is Sept (9) - Jan (1), playoffs through Feb (2)
+    // If we're in Jan-Feb, we're still in the previous year's season
+    if (month <= 2) {
+        return year - 1;
+    }
+    // March-August: previous season ended, next season hasn't started
+    // But check current year for preseason games starting in August
+    if (month <= 8) {
+        return year;
+    }
+    // September-December: current year's season
+    return year;
+}
+
 async function getSchedule() {
-    // Try 2025 preseason first, then fall back to 2024 regular season
+    const currentYear = getCurrentSeasonYear();
+    const previousYear = currentYear - 1;
+    const nextYear = currentYear + 1;
+    
+    // Try current year regular season first, then preseason, then previous year as fallback
     const urls = [
-        `${ESPN_API_BASE}/seasons/2025/types/1/teams/8/events`, // 2025 preseason
-        `${ESPN_API_BASE}/seasons/2024/types/2/teams/8/events`  // 2024 regular season
+        `${ESPN_API_BASE}/seasons/${currentYear}/types/2/teams/8/events`, // Current year regular season (PRIORITY)
+        `${ESPN_API_BASE}/seasons/${currentYear}/types/1/teams/8/events`, // Current year preseason
+        `${ESPN_API_BASE}/seasons/${previousYear}/types/2/teams/8/events`, // Previous year regular season (for Jan-Feb)
+        `${ESPN_API_BASE}/seasons/${nextYear}/types/2/teams/8/events`  // Next year (if late in current season)
     ];
 
     for (const url of urls) {
