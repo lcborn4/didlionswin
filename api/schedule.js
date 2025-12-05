@@ -109,10 +109,10 @@ export const handler = async (event, context) => {
                 mostRecentCompletedTime = gameTime;
             }
 
-            // Check if this is today's game (within 4 hours)
+            // Check if this is today's game (within 6 hours to catch games that might be live)
             const timeDiff = Math.abs(gameTime - nowTime);
             const hoursDiff = timeDiff / (1000 * 60 * 60);
-            if (hoursDiff <= 4) {
+            if (hoursDiff <= 6) {
                 currentIndex = i;
             }
         }
@@ -130,7 +130,7 @@ export const handler = async (event, context) => {
             }
         };
 
-        // Check current game first (if within 4 hours) - this might be live
+        // Check current game first (if within 6 hours) - this might be live
         if (currentIndex >= 0) {
             const currentGameData = await formatGame(allGames[currentIndex]);
             // If game is live, set it as currentGame (not latestGame)
@@ -410,6 +410,10 @@ async function formatGame(game) {
         let opponentScore = 0;
         let result = null;
 
+        // Get game status first - need it to determine if game is live
+        const gameStatus = competition.status?.type?.name || 'UNKNOWN';
+        const isGameLive = gameStatus === 'STATUS_IN_PROGRESS';
+
         if (homeTeam.score && awayTeam.score) {
             // Follow score references if they exist
             const homeScoreData = typeof homeTeam.score === 'object' && homeTeam.score.$ref
@@ -425,9 +429,10 @@ async function formatGame(game) {
             lionsScore = lionsIsHome ? homeScore : awayScore;
             opponentScore = lionsIsHome ? awayScore : homeScore;
 
-            // Only set result if game is actually finished (not live/in progress)
-            const gameStatus = competition.status?.type?.name || 'UNKNOWN';
-            if (gameStatus === 'STATUS_FINAL' || gameStatus === 'STATUS_FINAL_OVERTIME') {
+            // CRITICAL: Never set a result if the game is in progress
+            if (isGameLive) {
+                result = null; // Explicitly clear result for live games
+            } else if (gameStatus === 'STATUS_FINAL' || gameStatus === 'STATUS_FINAL_OVERTIME') {
                 // Game is finished, determine result
                 if (lionsScore > opponentScore) {
                     result = 'WIN';
@@ -437,7 +442,7 @@ async function formatGame(game) {
                     result = 'TIE';
                 }
             } else {
-                // Game is live or not finished yet - don't set a result
+                // Game is scheduled or unknown - don't set a result
                 result = null;
             }
         }
@@ -452,9 +457,9 @@ async function formatGame(game) {
                 lions: lionsScore,
                 opponent: opponentScore
             },
-            result: result,
-            status: competition.status?.type?.name || 'UNKNOWN',
-            isLive: competition.status?.type?.name === 'STATUS_IN_PROGRESS'
+            result: isGameLive ? null : result, // Explicitly clear result if live
+            status: gameStatus,
+            isLive: isGameLive
         };
     } catch (error) {
         console.error('Error formatting game:', error);
