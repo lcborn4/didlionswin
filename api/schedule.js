@@ -130,32 +130,58 @@ export const handler = async (event, context) => {
             }
         };
 
-        // Check current game first (if within 6 hours) - this might be live
-        if (currentIndex >= 0) {
-            const currentGameData = await formatGame(allGames[currentIndex]);
-            // If game is live, set it as currentGame (not latestGame)
-            if (currentGameData.isLive || currentGameData.status === 'STATUS_IN_PROGRESS') {
-                result.currentGame = currentGameData;
-                // Don't include live game as latestGame - find the most recent completed one
-                mostRecentCompletedGame = null;
-                mostRecentCompletedTime = 0;
-                
-                // Find the most recent COMPLETED game (before the live game)
-                for (let i = 0; i < allGames.length; i++) {
-                    if (i === currentIndex) continue; // Skip the live game
-                    const gameDate = new Date(allGames[i].date);
-                    const gameTime = gameDate.getTime();
-                    if (gameTime < nowTime && gameTime > mostRecentCompletedTime) {
-                        mostRecentCompletedGame = allGames[i];
-                        mostRecentCompletedTime = gameTime;
+        // CRITICAL: Check ALL recent games for live status (not just time-based)
+        // A game could be live even if it started hours ago (overtime, delays, etc.)
+        let liveGameFound = false;
+        
+        // First, check games within the last 12 hours to see if any are live
+        // This catches games that started earlier but are still in progress
+        for (let i = 0; i < Math.min(allGames.length, 10); i++) {
+            const gameDate = new Date(allGames[i].date);
+            const gameTime = gameDate.getTime();
+            const hoursDiff = Math.abs(gameTime - nowTime) / (1000 * 60 * 60);
+            
+            // Check games from the past 12 hours (could be live) or next 6 hours (might start soon)
+            if (hoursDiff <= 12) {
+                try {
+                    const gameData = await formatGame(allGames[i]);
+                    // If this game is live, it becomes the currentGame
+                    if (gameData.isLive || gameData.status === 'STATUS_IN_PROGRESS') {
+                        result.currentGame = gameData;
+                        liveGameFound = true;
+                        
+                        // Don't include live game as latestGame - find the most recent completed one
+                        mostRecentCompletedGame = null;
+                        mostRecentCompletedTime = 0;
+                        
+                        // Find the most recent COMPLETED game (before the live game)
+                        for (let j = 0; j < allGames.length; j++) {
+                            if (j === i) continue; // Skip the live game
+                            const otherGameDate = new Date(allGames[j].date);
+                            const otherGameTime = otherGameDate.getTime();
+                            if (otherGameTime < nowTime && otherGameTime > mostRecentCompletedTime) {
+                                mostRecentCompletedGame = allGames[j];
+                                mostRecentCompletedTime = otherGameTime;
+                            }
+                        }
+                        break; // Found live game, stop searching
                     }
+                } catch (error) {
+                    console.error(`Error checking game ${i} for live status:`, error);
                 }
-            } else if (currentGameData.status === 'STATUS_FINAL' || currentGameData.status === 'STATUS_FINAL_OVERTIME') {
+            }
+        }
+        
+        // If no live game found, check the time-based currentIndex for scheduled/upcoming games
+        if (!liveGameFound && currentIndex >= 0) {
+            const currentGameData = await formatGame(allGames[currentIndex]);
+            
+            if (currentGameData.status === 'STATUS_FINAL' || currentGameData.status === 'STATUS_FINAL_OVERTIME') {
                 // Game is finished - it's the latest game, not current
                 result.latestGame = currentGameData;
                 mostRecentCompletedGame = allGames[currentIndex];
-            } else {
-                // Game is scheduled but not started yet - it's the next game
+            } else if (currentGameData.status === 'STATUS_SCHEDULED') {
+                // Game is scheduled but not started yet - it's the current/next game
                 result.currentGame = currentGameData;
             }
         }

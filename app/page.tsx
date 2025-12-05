@@ -193,10 +193,42 @@ export default function Home() {
     let isLive = false;
 
     // CRITICAL: Check for LIVE games FIRST before showing final results
-    // Priority order: 1) Schedule currentGame (source of truth), 2) Status data, 3) Live game data, 4) Completed games
+    // Priority order: 1) Live data API (most reliable for live games), 2) Status data, 3) Schedule currentGame, 4) Completed games
     
-    // FIRST: Check scheduleData.currentGame - this is the source of truth for current game status
-    if (scheduleData?.currentGame) {
+    // FIRST: Check liveData API - this is specifically designed to detect live games
+    if (liveData && liveData.isLive) {
+      isLive = true;
+      opponent = liveData.opponent || 'Opponent';
+      lionsScore = liveData.score?.lions?.toString() || '--';
+      opponentScore = liveData.score?.opponent?.toString() || '--';
+      mainAnswer = '🔴 LIVE';
+      mainAnswerColor = '#ff0000';
+      gameResult = `🏈 LIVE: ${liveData.name}`;
+    }
+    
+    // SECOND: Check status data for live game indication
+    else if (statusData && statusData.hasLiveGame && statusData.currentGame) {
+      isLive = true;
+      mainAnswer = '🔴 LIVE';
+      mainAnswerColor = '#ff0000';
+      gameResult = `🏈 LIVE: ${statusData.currentGame.name}`;
+      
+      // Try to get scores from liveData if available (even if it's not marked as live)
+      if (liveData) {
+        opponent = liveData.opponent || statusData.currentGame.name.split(' at ')[0].replace('Detroit Lions ', '');
+        lionsScore = liveData.score?.lions?.toString() || '--';
+        opponentScore = liveData.score?.opponent?.toString() || '--';
+      } else if (scheduleData?.currentGame) {
+        opponent = scheduleData.currentGame.opponent || 'Opponent';
+        lionsScore = scheduleData.currentGame.score?.lions?.toString() || '--';
+        opponentScore = scheduleData.currentGame.score?.opponent?.toString() || '--';
+      } else {
+        opponent = 'Opponent';
+      }
+    }
+    
+    // THIRD: Check scheduleData.currentGame - this is the source of truth for current game status
+    else if (scheduleData?.currentGame) {
       const currentGame = scheduleData.currentGame;
       const gameStatus = currentGame.status || '';
       const isGameLive = currentGame.isLive || gameStatus === 'STATUS_IN_PROGRESS';
@@ -212,7 +244,7 @@ export default function Home() {
         opponentScore = currentGame.score?.opponent?.toString() || '--';
         
         // Try to get updated scores from liveData if available
-        if (liveData && liveData.isLive) {
+        if (liveData) {
           opponent = liveData.opponent || opponent;
           lionsScore = liveData.score?.lions?.toString() || lionsScore;
           opponentScore = liveData.score?.opponent?.toString() || opponentScore;
@@ -225,36 +257,6 @@ export default function Home() {
         mainAnswerColor = '#ff8800';
         opponent = currentGame.opponent || 'Opponent';
       }
-    }
-    
-    // SECOND: Check status data for live game indication (if scheduleData didn't catch it)
-    if (!isLive && statusData && statusData.hasLiveGame && statusData.currentGame) {
-      isLive = true;
-      mainAnswer = '🔴 LIVE';
-      mainAnswerColor = '#ff0000';
-      gameResult = `🏈 LIVE: ${statusData.currentGame.name}`;
-      
-      // Try to get scores from liveData if available
-      if (liveData && liveData.isLive) {
-        opponent = liveData.opponent || statusData.currentGame.name.split(' at ')[0].replace('Detroit Lions ', '');
-        lionsScore = liveData.score?.lions?.toString() || '--';
-        opponentScore = liveData.score?.opponent?.toString() || '--';
-      } else if (scheduleData?.currentGame) {
-        opponent = scheduleData.currentGame.opponent || 'Opponent';
-        lionsScore = scheduleData.currentGame.score?.lions?.toString() || '--';
-        opponentScore = scheduleData.currentGame.score?.opponent?.toString() || '--';
-      }
-    }
-    
-    // THIRD: Check live game data directly (if game is actually in progress)
-    if (!isLive && liveData && liveData.isLive) {
-      isLive = true;
-      opponent = liveData.opponent;
-      lionsScore = liveData.score.lions.toString();
-      opponentScore = liveData.score.opponent.toString();
-      mainAnswer = '🔴 LIVE';
-      mainAnswerColor = '#ff0000';
-      gameResult = `🏈 LIVE: ${liveData.name}`;
     }
 
     // FOURTH: Check status data for game day but not live
@@ -280,37 +282,66 @@ export default function Home() {
     }
 
     // FIFTH: Only show final results if game is NOT live and we have completed game data
+    // CRITICAL: Triple-check that no API is indicating a live game before showing results
     if (!isLive && scheduleData) {
-      // Use currentGame if available (and not live), otherwise use latestGame
-      const gameToShow = scheduleData.currentGame || scheduleData.latestGame;
+      // Final safety check: if liveData or statusData says there's a live game, don't show results
+      const hasAnyLiveIndicator = 
+        (liveData && liveData.isLive) ||
+        (statusData && statusData.hasLiveGame) ||
+        (statusData && statusData.currentGame && statusData.currentGame.isLive);
       
-      if (gameToShow) {
-        // Double-check that this game is NOT live (shouldn't happen, but be safe)
-        const gameStatus = gameToShow.status || '';
-        const isGameLive = gameToShow.isLive || gameStatus === 'STATUS_IN_PROGRESS';
+      if (hasAnyLiveIndicator) {
+        // One of the APIs says there's a live game, override and show LIVE
+        isLive = true;
+        mainAnswer = '🔴 LIVE';
+        mainAnswerColor = '#ff0000';
         
-        if (!isGameLive && gameStatus !== 'STATUS_SCHEDULED') {
-          // Only update if we don't already have data from status/live checks
-          if (lionsScore === '--' || opponent === `Loading${loadingDots}`) {
-            opponent = gameToShow.opponent;
-            lionsScore = gameToShow.score?.lions?.toString() || '--';
-            opponentScore = gameToShow.score?.opponent?.toString() || '--';
-          }
+        if (liveData && liveData.isLive) {
+          gameResult = `🏈 LIVE: ${liveData.name}`;
+          opponent = liveData.opponent || 'Opponent';
+          lionsScore = liveData.score?.lions?.toString() || '--';
+          opponentScore = liveData.score?.opponent?.toString() || '--';
+        } else if (statusData && statusData.currentGame) {
+          gameResult = `🏈 LIVE: ${statusData.currentGame.name}`;
+        }
+      } else {
+        // Use currentGame if available (and not live), otherwise use latestGame
+        const gameToShow = scheduleData.currentGame || scheduleData.latestGame;
+        
+        if (gameToShow) {
+          // Double-check that this game is NOT live (shouldn't happen, but be safe)
+          const gameStatus = gameToShow.status || '';
+          const isGameLive = gameToShow.isLive || gameStatus === 'STATUS_IN_PROGRESS';
           
-          // Only show final result if game is actually completed (STATUS_FINAL)
-          if (gameStatus === 'STATUS_FINAL' || gameStatus === 'STATUS_FINAL_OVERTIME') {
-            if (gameToShow.result === 'WIN') {
-              mainAnswer = '✅ YES';
-              mainAnswerColor = '#00aa00';
-              gameResult = `🏈 Game Over: ${gameToShow.name}`;
-            } else if (gameToShow.result === 'LOSS') {
-              mainAnswer = '❌ NO';
-              mainAnswerColor = '#cc0000';
-              gameResult = `🏈 Game Over: ${gameToShow.name}`;
-            } else if (gameToShow.result === 'TIE') {
-              mainAnswer = '🤝 TIE';
-              mainAnswerColor = '#ff8800';
-              gameResult = `🏈 Game Over: ${gameToShow.name}`;
+          // Also check: if this is today's game and it's not clearly final, don't show results
+          const gameDate = new Date(gameToShow.date);
+          const now = new Date();
+          const hoursSinceGame = (now.getTime() - gameDate.getTime()) / (1000 * 60 * 60);
+          const isRecentGame = hoursSinceGame >= 0 && hoursSinceGame <= 4; // Within 4 hours
+          
+          if (!isGameLive && gameStatus !== 'STATUS_SCHEDULED' && !isRecentGame) {
+            // Only update if we don't already have data from status/live checks
+            if (lionsScore === '--' || opponent === `Loading${loadingDots}`) {
+              opponent = gameToShow.opponent;
+              lionsScore = gameToShow.score?.lions?.toString() || '--';
+              opponentScore = gameToShow.score?.opponent?.toString() || '--';
+            }
+            
+            // Only show final result if game is actually completed (STATUS_FINAL)
+            if (gameStatus === 'STATUS_FINAL' || gameStatus === 'STATUS_FINAL_OVERTIME') {
+              if (gameToShow.result === 'WIN') {
+                mainAnswer = '✅ YES';
+                mainAnswerColor = '#00aa00';
+                gameResult = `🏈 Game Over: ${gameToShow.name}`;
+              } else if (gameToShow.result === 'LOSS') {
+                mainAnswer = '❌ NO';
+                mainAnswerColor = '#cc0000';
+                gameResult = `🏈 Game Over: ${gameToShow.name}`;
+              } else if (gameToShow.result === 'TIE') {
+                mainAnswer = '🤝 TIE';
+                mainAnswerColor = '#ff8800';
+                gameResult = `🏈 Game Over: ${gameToShow.name}`;
+              }
             }
           }
         }
