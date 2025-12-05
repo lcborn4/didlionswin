@@ -130,35 +130,65 @@ export const handler = async (event, context) => {
             }
         };
 
-        // Latest completed game = most recently completed game (before current date)
-        if (mostRecentCompletedGame) {
-            result.latestGame = await formatGame(mostRecentCompletedGame);
-
-            // Previous game = the game that occurred before the latest game
-            // Search through all games to find the one just before the latest game's date
-            const latestGameDate = new Date(mostRecentCompletedGame.date);
-            let previousGame = null;
-            let previousGameTime = 0;
-
-            for (let i = 0; i < allGames.length; i++) {
-                const gameDate = new Date(allGames[i].date);
-                const gameTime = gameDate.getTime();
-
-                // Find the game that's before the latest game but closest to it
-                if (gameTime < latestGameDate.getTime() && gameTime > previousGameTime) {
-                    previousGame = allGames[i];
-                    previousGameTime = gameTime;
+        // Check current game first (if within 4 hours) - this might be live
+        if (currentIndex >= 0) {
+            const currentGameData = await formatGame(allGames[currentIndex]);
+            // If game is live, set it as currentGame (not latestGame)
+            if (currentGameData.isLive || currentGameData.status === 'STATUS_IN_PROGRESS') {
+                result.currentGame = currentGameData;
+                // Don't include live game as latestGame - find the most recent completed one
+                mostRecentCompletedGame = null;
+                mostRecentCompletedTime = 0;
+                
+                // Find the most recent COMPLETED game (before the live game)
+                for (let i = 0; i < allGames.length; i++) {
+                    if (i === currentIndex) continue; // Skip the live game
+                    const gameDate = new Date(allGames[i].date);
+                    const gameTime = gameDate.getTime();
+                    if (gameTime < nowTime && gameTime > mostRecentCompletedTime) {
+                        mostRecentCompletedGame = allGames[i];
+                        mostRecentCompletedTime = gameTime;
+                    }
                 }
-            }
-
-            if (previousGame) {
-                result.previousGame = await formatGame(previousGame);
+            } else if (currentGameData.status === 'STATUS_FINAL' || currentGameData.status === 'STATUS_FINAL_OVERTIME') {
+                // Game is finished - it's the latest game, not current
+                result.latestGame = currentGameData;
+                mostRecentCompletedGame = allGames[currentIndex];
+            } else {
+                // Game is scheduled but not started yet - it's the next game
+                result.currentGame = currentGameData;
             }
         }
 
-        // Current game (if any today)
-        if (currentIndex >= 0) {
-            result.currentGame = await formatGame(allGames[currentIndex]);
+        // Latest completed game = most recently completed game (before current date)
+        // Only if we don't already have it from current game check
+        if (!result.latestGame && mostRecentCompletedGame) {
+            const latestGameData = await formatGame(mostRecentCompletedGame);
+            // Only set as latest if it's actually completed (not live)
+            if (!latestGameData.isLive && (latestGameData.status === 'STATUS_FINAL' || latestGameData.status === 'STATUS_FINAL_OVERTIME' || latestGameData.result)) {
+                result.latestGame = latestGameData;
+
+                // Previous game = the game that occurred before the latest game
+                const latestGameDate = new Date(mostRecentCompletedGame.date);
+                let previousGame = null;
+                let previousGameTime = 0;
+
+                for (let i = 0; i < allGames.length; i++) {
+                    if (i === currentIndex) continue; // Skip current game if it exists
+                    const gameDate = new Date(allGames[i].date);
+                    const gameTime = gameDate.getTime();
+
+                    // Find the game that's before the latest game but closest to it
+                    if (gameTime < latestGameDate.getTime() && gameTime > previousGameTime) {
+                        previousGame = allGames[i];
+                        previousGameTime = gameTime;
+                    }
+                }
+
+                if (previousGame) {
+                    result.previousGame = await formatGame(previousGame);
+                }
+            }
         }
 
         // Next game = the upcoming game (first game in the future)
@@ -395,12 +425,20 @@ async function formatGame(game) {
             lionsScore = lionsIsHome ? homeScore : awayScore;
             opponentScore = lionsIsHome ? awayScore : homeScore;
 
-            if (lionsScore > opponentScore) {
-                result = 'WIN';
-            } else if (lionsScore < opponentScore) {
-                result = 'LOSS';
+            // Only set result if game is actually finished (not live/in progress)
+            const gameStatus = competition.status?.type?.name || 'UNKNOWN';
+            if (gameStatus === 'STATUS_FINAL' || gameStatus === 'STATUS_FINAL_OVERTIME') {
+                // Game is finished, determine result
+                if (lionsScore > opponentScore) {
+                    result = 'WIN';
+                } else if (lionsScore < opponentScore) {
+                    result = 'LOSS';
+                } else {
+                    result = 'TIE';
+                }
             } else {
-                result = 'TIE';
+                // Game is live or not finished yet - don't set a result
+                result = null;
             }
         }
 
@@ -415,7 +453,8 @@ async function formatGame(game) {
                 opponent: opponentScore
             },
             result: result,
-            status: competition.status?.type?.name || 'UNKNOWN'
+            status: competition.status?.type?.name || 'UNKNOWN',
+            isLive: competition.status?.type?.name === 'STATUS_IN_PROGRESS'
         };
     } catch (error) {
         console.error('Error formatting game:', error);
