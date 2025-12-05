@@ -12,6 +12,20 @@ let cache = {
 };
 
 export const handler = async (event, context) => {
+    // Handle preflight OPTIONS requests
+    if (event.httpMethod === 'OPTIONS' || event.requestContext?.http?.method === 'OPTIONS') {
+        return {
+            statusCode: 200,
+            headers: {
+                'Access-Control-Allow-Origin': '*',
+                'Access-Control-Allow-Headers': 'Content-Type',
+                'Access-Control-Allow-Methods': 'GET, OPTIONS',
+                'Access-Control-Max-Age': '86400'
+            },
+            body: ''
+        };
+    }
+
     try {
         console.log('Live score request received');
 
@@ -119,27 +133,55 @@ async function getSchedule() {
 
 async function findLatestGame(schedule) {
     const now = new Date();
-    let latestGameIndex = 0;
+    const nowTime = now.getTime();
 
     // Get actual event data from items
     if (!schedule.items || schedule.items.length === 0) {
         throw new Error('No games found in schedule');
     }
 
+    // Get the first 5 recent games
     const games = await Promise.all(
         schedule.items.slice(0, 5).map(async (item) => {
-            const response = await fetch(item.$ref);
-            return await response.json();
+            try {
+                const response = await fetch(item.$ref);
+                return await response.json();
+            } catch (error) {
+                console.error(`Error fetching game:`, error);
+                return null;
+            }
         })
     );
 
-    games.forEach((event, index) => {
-        if (Date.parse(event.date) <= now.getTime()) {
-            latestGameIndex = index;
-        }
-    });
+    // Filter out nulls
+    const validGames = games.filter(game => game !== null && game.id);
 
-    return games[latestGameIndex].id;
+    // Find the game closest to now (could be past or future)
+    let latestGame = null;
+    let closestTimeDiff = Infinity;
+
+    for (const game of validGames) {
+        const gameTime = Date.parse(game.date);
+        const timeDiff = Math.abs(gameTime - nowTime);
+        
+        // If this game is closer to now, use it
+        if (timeDiff < closestTimeDiff) {
+            closestTimeDiff = timeDiff;
+            latestGame = game;
+        }
+    }
+
+    if (latestGame) {
+        console.log(`Found latest game: ${latestGame.id} (${latestGame.name})`);
+        return latestGame.id;
+    }
+
+    // Fallback to first game
+    if (validGames.length > 0) {
+        return validGames[0].id;
+    }
+
+    throw new Error('No valid games found in schedule');
 }
 
 async function getLiveGameData(gameId) {
@@ -153,56 +195,94 @@ async function getLiveGameData(gameId) {
     }
 
     const gameData = await gameResponse.json();
+    
+    if (!gameData.competitions || !gameData.competitions[0]) {
+        throw new Error('Invalid game data: no competitions found');
+    }
+    
     const competition = gameData.competitions[0];
 
-    // Get scores
-    const teamOneScoreUrl = competition.competitors[0].score['$ref'];
-    const teamTwoScoreUrl = competition.competitors[1].score['$ref'];
+    if (!competition.competitors || competition.competitors.length < 2) {
+        throw new Error('Invalid game data: insufficient competitors');
+    }
 
-    const [teamOneScore, teamTwoScore] = await Promise.all([
-        fetch(teamOneScoreUrl).then(r => r.json()),
-        fetch(teamTwoScoreUrl).then(r => r.json())
-    ]);
+    // Get scores safely
+    let teamOneScore = { value: 0 };
+    let teamTwoScore = { value: 0 };
+    
+    try {
+        const teamOneScoreRef = competition.competitors[0]?.score?.$ref || competition.competitors[0]?.score;
+        const teamTwoScoreRef = competition.competitors[1]?.score?.$ref || competition.competitors[1]?.score;
+        
+        if (teamOneScoreRef && typeof teamOneScoreRef === 'string' && teamOneScoreRef.includes('http')) {
+            teamOneScore = await fetch(teamOneScoreRef).then(r => r.json()).catch(() => ({ value: 0 }));
+        } else if (teamOneScoreRef && typeof teamOneScoreRef === 'object') {
+            teamOneScore = teamOneScoreRef;
+        }
+        
+        if (teamTwoScoreRef && typeof teamTwoScoreRef === 'string' && teamTwoScoreRef.includes('http')) {
+            teamTwoScore = await fetch(teamTwoScoreRef).then(r => r.json()).catch(() => ({ value: 0 }));
+        } else if (teamTwoScoreRef && typeof teamTwoScoreRef === 'object') {
+            teamTwoScore = teamTwoScoreRef;
+        }
+    } catch (error) {
+        console.error('Error fetching scores:', error);
+        // Continue with default scores of 0
+    }
 
-    // Get game status
-    const statusUrl = competition.status['$ref'];
-    const status = await fetch(statusUrl).then(r => r.json());
+    // Get game status safely
+    let status = { type: { name: 'UNKNOWN' }, period: 0, displayClock: '' };
+    
+    try {
+        const statusRef = competition.status?.$ref || competition.status;
+        
+        if (statusRef && typeof statusRef === 'string' && statusRef.includes('http')) {
+            status = await fetch(statusRef).then(r => r.json()).catch(() => status);
+        } else if (statusRef && typeof statusRef === 'object') {
+            status = statusRef;
+        }
+    } catch (error) {
+        console.error('Error fetching status:', error);
+        // Continue with default status
+    }
+
+    const statusName = status.type?.name || status.type || 'UNKNOWN';
 
     // Determine Lions result
     let lionsResult = '';
     let lionsScore = 0;
     let opponentScore = 0;
-    let opponentName = '';
+    let opponentName = 'Unknown';
 
     competition.competitors.forEach((competitor) => {
         if (competitor.id === LIONS_ID) {
             lionsScore = competitor.id === competition.competitors[0].id ?
-                teamOneScore.value : teamTwoScore.value;
+                (teamOneScore.value || teamOneScore || 0) : (teamTwoScore.value || teamTwoScore || 0);
 
             if (competitor.winner !== undefined) {
                 lionsResult = competitor.winner ? 'WIN' : 'LOSS';
-            } else if (status.type.name === 'STATUS_IN_PROGRESS') {
+            } else if (statusName === 'STATUS_IN_PROGRESS') {
                 lionsResult = 'In Progress';
             }
         } else {
-            opponentName = competitor.team.displayName;
+            opponentName = competitor.team?.displayName || 'Unknown';
             opponentScore = competitor.id === competition.competitors[0].id ?
-                teamOneScore.value : teamTwoScore.value;
+                (teamOneScore.value || teamOneScore || 0) : (teamTwoScore.value || teamTwoScore || 0);
         }
     });
 
     const liveData = {
         gameId: gameId,
-        name: gameData.name,
-        date: gameData.date,
-        status: status.type.name,
+        name: gameData.name || 'Unknown Game',
+        date: gameData.date || new Date().toISOString(),
+        status: statusName,
         result: lionsResult,
         score: {
             lions: lionsScore,
             opponent: opponentScore
         },
         opponent: opponentName,
-        isLive: status.type.name === 'STATUS_IN_PROGRESS',
+        isLive: statusName === 'STATUS_IN_PROGRESS',
         timestamp: new Date().toISOString(),
         quarter: status.period || 0,
         clock: status.displayClock || '',
