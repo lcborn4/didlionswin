@@ -4,9 +4,6 @@ on:
   push:
     branches: [master, main]
   workflow_dispatch:
-  schedule:
-    # Rebuild daily during football season for schedule updates
-    - cron: "0 11 * 9-12,1-2 *" # Sep-Dec, Jan-Feb
 
 env:
   NODE_VERSION: "18"
