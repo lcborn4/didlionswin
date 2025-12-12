@@ -295,10 +295,8 @@ export default function Home() {
           if (!isGameLive && gameToShow.result) {
             // ALWAYS use the scores and opponent from the game - this is the source of truth
             // scheduleData.latestGame is more reliable than liveData, so use it completely
-            // Force use of gameToShow.opponent when available - don't fall back to old values
-            if (gameToShow.opponent) {
-              opponent = gameToShow.opponent;
-            }
+            // All data should be dynamic from the API - use gameToShow properties directly
+            opponent = gameToShow.opponent || opponent;
             if (gameToShow.score?.lions !== undefined && gameToShow.score?.lions !== null) {
               lionsScore = gameToShow.score.lions.toString();
             }
@@ -306,6 +304,7 @@ export default function Home() {
               opponentScore = gameToShow.score.opponent.toString();
             }
             
+            // All result data comes from gameToShow - dynamic from API
             if (gameToShow.result === 'WIN') {
               mainAnswer = '✅ YES';
               mainAnswerColor = '#00aa00';
@@ -355,13 +354,15 @@ export default function Home() {
       }
     }
     
-    // Handle live data that's not live (completed) - only if we haven't already set a result from scheduleData
-    // scheduleData.latestGame is more reliable, so prioritize that
+    // Handle live data that's not live (completed) - ONLY use this as a last resort
+    // scheduleData.latestGame is ALWAYS more reliable for final results, so prioritize that
+    // Only use liveData if scheduleData doesn't have a result AND we haven't set mainAnswer yet
     const hasResultFromSchedule = scheduleData && (scheduleData.currentGame?.result || scheduleData.latestGame?.result);
-    if (!isLive && !hasResultFromSchedule && liveData && !liveData.isLive && liveData.result) {
-      if (liveData.opponent) {
-        opponent = liveData.opponent;
-      }
+    const hasMainAnswerSet = mainAnswer.includes('YES') || mainAnswer.includes('NO') || mainAnswer.includes('TIE');
+    
+    if (!isLive && !hasResultFromSchedule && !hasMainAnswerSet && liveData && !liveData.isLive && liveData.result) {
+      // Only use liveData if scheduleData doesn't have the game data
+      opponent = liveData.opponent || opponent;
       if (liveData.score?.lions !== undefined) {
         lionsScore = liveData.score.lions.toString();
       }
