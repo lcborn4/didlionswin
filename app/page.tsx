@@ -293,14 +293,14 @@ export default function Home() {
           
           // If game has a result and is not live, show it!
           if (!isGameLive && gameToShow.result) {
-            // Always use the scores and opponent from the game - don't fall back to old values
-            if (gameToShow.opponent) {
-              opponent = gameToShow.opponent;
-            }
-            if (gameToShow.score?.lions !== undefined) {
+            // ALWAYS use the scores and opponent from the game - this is the source of truth
+            // scheduleData.latestGame is more reliable than liveData, so use it completely
+            console.log('Setting opponent from gameToShow:', gameToShow.opponent, 'gameToShow:', gameToShow);
+            opponent = gameToShow.opponent || opponent; // Use gameToShow.opponent if available, otherwise keep current
+            if (gameToShow.score?.lions !== undefined && gameToShow.score?.lions !== null) {
               lionsScore = gameToShow.score.lions.toString();
             }
-            if (gameToShow.score?.opponent !== undefined) {
+            if (gameToShow.score?.opponent !== undefined && gameToShow.score?.opponent !== null) {
               opponentScore = gameToShow.score.opponent.toString();
             }
             
@@ -322,9 +322,7 @@ export default function Home() {
             gameResult = `🏈 Upcoming: ${gameToShow.name}`;
             mainAnswer = '⏰ SOON';
             mainAnswerColor = '#ff8800';
-            if (gameToShow.opponent) {
-              opponent = gameToShow.opponent;
-            }
+            opponent = gameToShow.opponent || opponent;
           }
         }
       }
