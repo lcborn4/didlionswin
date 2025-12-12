@@ -295,8 +295,10 @@ export default function Home() {
           if (!isGameLive && gameToShow.result) {
             // ALWAYS use the scores and opponent from the game - this is the source of truth
             // scheduleData.latestGame is more reliable than liveData, so use it completely
-            console.log('Setting opponent from gameToShow:', gameToShow.opponent, 'gameToShow:', gameToShow);
-            opponent = gameToShow.opponent || opponent; // Use gameToShow.opponent if available, otherwise keep current
+            // Force use of gameToShow.opponent when available - don't fall back to old values
+            if (gameToShow.opponent) {
+              opponent = gameToShow.opponent;
+            }
             if (gameToShow.score?.lions !== undefined && gameToShow.score?.lions !== null) {
               lionsScore = gameToShow.score.lions.toString();
             }
