@@ -293,10 +293,16 @@ export default function Home() {
           
           // If game has a result and is not live, show it!
           if (!isGameLive && gameToShow.result) {
-            // Always use the scores and opponent from the game
-            opponent = gameToShow.opponent || opponent;
-            lionsScore = gameToShow.score?.lions?.toString() || '--';
-            opponentScore = gameToShow.score?.opponent?.toString() || '--';
+            // Always use the scores and opponent from the game - don't fall back to old values
+            if (gameToShow.opponent) {
+              opponent = gameToShow.opponent;
+            }
+            if (gameToShow.score?.lions !== undefined) {
+              lionsScore = gameToShow.score.lions.toString();
+            }
+            if (gameToShow.score?.opponent !== undefined) {
+              opponentScore = gameToShow.score.opponent.toString();
+            }
             
             if (gameToShow.result === 'WIN') {
               mainAnswer = '✅ YES';
@@ -316,7 +322,9 @@ export default function Home() {
             gameResult = `🏈 Upcoming: ${gameToShow.name}`;
             mainAnswer = '⏰ SOON';
             mainAnswerColor = '#ff8800';
-            opponent = gameToShow.opponent || opponent;
+            if (gameToShow.opponent) {
+              opponent = gameToShow.opponent;
+            }
           }
         }
       }
@@ -347,11 +355,19 @@ export default function Home() {
       }
     }
     
-    // Handle live data that's not live (completed)
-    if (!isLive && liveData && !liveData.isLive && liveData.result) {
-      opponent = liveData.opponent;
-      lionsScore = liveData.score.lions.toString();
-      opponentScore = liveData.score.opponent.toString();
+    // Handle live data that's not live (completed) - only if we haven't already set a result from scheduleData
+    // scheduleData.latestGame is more reliable, so prioritize that
+    const hasResultFromSchedule = scheduleData && (scheduleData.currentGame?.result || scheduleData.latestGame?.result);
+    if (!isLive && !hasResultFromSchedule && liveData && !liveData.isLive && liveData.result) {
+      if (liveData.opponent) {
+        opponent = liveData.opponent;
+      }
+      if (liveData.score?.lions !== undefined) {
+        lionsScore = liveData.score.lions.toString();
+      }
+      if (liveData.score?.opponent !== undefined) {
+        opponentScore = liveData.score.opponent.toString();
+      }
       
       if (liveData.result === 'WIN') {
         mainAnswer = '✅ YES';
