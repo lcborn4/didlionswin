@@ -259,30 +259,8 @@ export default function Home() {
       }
     }
 
-    // FOURTH: Check status data for game day but not live
-    if (!isLive && statusData) {
-      if (statusData.isGameDay && statusData.currentGame) {
-        if (statusData.currentGame.isPreGame) {
-          gameResult = `🏈 Upcoming: ${statusData.currentGame.name}`;
-          mainAnswer = '⏰ SOON';
-          mainAnswerColor = '#ff8800';
-        } else if (statusData.currentGame.isPostGame) {
-          gameResult = `🏈 Game Over: ${statusData.currentGame.name}`;
-          // Will get result from scheduleData below
-        }
-      } else if (statusData.season?.isOffSeason) {
-        mainAnswer = '🏈 OFF-SEASON';
-        mainAnswerColor = '#666';
-        gameResult = '🏈 Off-season - No games scheduled';
-      } else {
-        mainAnswer = '🏈 NO GAME';
-        mainAnswerColor = '#666';
-        gameResult = '🏈 No game today';
-      }
-    }
-
-    // FIFTH: Only show final results if game is NOT live and we have completed game data
-    // CRITICAL: Triple-check that no API is indicating a live game before showing results
+    // FOURTH: Show final results from scheduleData if game is NOT live
+    // CRITICAL: Prioritize scheduleData.latestGame for final results, but only if no live game
     if (!isLive && scheduleData) {
       // Final safety check: if liveData or statusData says there's a live game, don't show results
       const hasAnyLiveIndicator = 
@@ -309,41 +287,62 @@ export default function Home() {
         const gameToShow = scheduleData.currentGame || scheduleData.latestGame;
         
         if (gameToShow) {
-          // Double-check that this game is NOT live (shouldn't happen, but be safe)
+          // We have a game - check if it's live or has a result
           const gameStatus = gameToShow.status || '';
           const isGameLive = gameToShow.isLive || gameStatus === 'STATUS_IN_PROGRESS';
           
-          // Also check: if this is today's game and it's not clearly final, don't show results
-          const gameDate = new Date(gameToShow.date);
-          const now = new Date();
-          const hoursSinceGame = (now.getTime() - gameDate.getTime()) / (1000 * 60 * 60);
-          const isRecentGame = hoursSinceGame >= 0 && hoursSinceGame <= 4; // Within 4 hours
-          
-          if (!isGameLive && gameStatus !== 'STATUS_SCHEDULED' && !isRecentGame) {
-            // Only update if we don't already have data from status/live checks
-            if (lionsScore === '--' || opponent === `Loading${loadingDots}`) {
-              opponent = gameToShow.opponent;
-              lionsScore = gameToShow.score?.lions?.toString() || '--';
-              opponentScore = gameToShow.score?.opponent?.toString() || '--';
-            }
+          // If game has a result and is not live, show it!
+          if (!isGameLive && gameToShow.result) {
+            // Always use the scores and opponent from the game
+            opponent = gameToShow.opponent || opponent;
+            lionsScore = gameToShow.score?.lions?.toString() || '--';
+            opponentScore = gameToShow.score?.opponent?.toString() || '--';
             
-            // Only show final result if game is actually completed (STATUS_FINAL)
-            if (gameStatus === 'STATUS_FINAL' || gameStatus === 'STATUS_FINAL_OVERTIME') {
-              if (gameToShow.result === 'WIN') {
-                mainAnswer = '✅ YES';
-                mainAnswerColor = '#00aa00';
-                gameResult = `🏈 Game Over: ${gameToShow.name}`;
-              } else if (gameToShow.result === 'LOSS') {
-                mainAnswer = '❌ NO';
-                mainAnswerColor = '#cc0000';
-                gameResult = `🏈 Game Over: ${gameToShow.name}`;
-              } else if (gameToShow.result === 'TIE') {
-                mainAnswer = '🤝 TIE';
-                mainAnswerColor = '#ff8800';
-                gameResult = `🏈 Game Over: ${gameToShow.name}`;
-              }
+            if (gameToShow.result === 'WIN') {
+              mainAnswer = '✅ YES';
+              mainAnswerColor = '#00aa00';
+              gameResult = `🏈 Game Over: ${gameToShow.name}`;
+            } else if (gameToShow.result === 'LOSS') {
+              mainAnswer = '❌ NO';
+              mainAnswerColor = '#cc0000';
+              gameResult = `🏈 Game Over: ${gameToShow.name}`;
+            } else if (gameToShow.result === 'TIE') {
+              mainAnswer = '🤝 TIE';
+              mainAnswerColor = '#ff8800';
+              gameResult = `🏈 Game Over: ${gameToShow.name}`;
             }
+          } else if (gameStatus === 'STATUS_SCHEDULED' && gameToShow === scheduleData.currentGame) {
+            // Upcoming game that hasn't started yet
+            gameResult = `🏈 Upcoming: ${gameToShow.name}`;
+            mainAnswer = '⏰ SOON';
+            mainAnswerColor = '#ff8800';
+            opponent = gameToShow.opponent || opponent;
           }
+        }
+      }
+    }
+
+    // FIFTH: Check status data for game day but not live (only if we haven't set mainAnswer yet)
+    if (!isLive && !mainAnswer.includes('YES') && !mainAnswer.includes('NO') && !mainAnswer.includes('TIE') && statusData) {
+      if (statusData.isGameDay && statusData.currentGame) {
+        if (statusData.currentGame.isPreGame) {
+          gameResult = `🏈 Upcoming: ${statusData.currentGame.name}`;
+          mainAnswer = '⏰ SOON';
+          mainAnswerColor = '#ff8800';
+        } else if (statusData.currentGame.isPostGame) {
+          gameResult = `🏈 Game Over: ${statusData.currentGame.name}`;
+          // Will get result from scheduleData above
+        }
+      } else if (statusData.season?.isOffSeason) {
+        mainAnswer = '🏈 OFF-SEASON';
+        mainAnswerColor = '#666';
+        gameResult = '🏈 Off-season - No games scheduled';
+      } else {
+        // Only show "NO GAME" if we haven't already set a result
+        if (mainAnswer === `🏈 Loading${loadingDots}` || mainAnswer.includes('Loading')) {
+          mainAnswer = '🏈 NO GAME';
+          mainAnswerColor = '#666';
+          gameResult = '🏈 No game today';
         }
       }
     }
