@@ -4,12 +4,12 @@ FROM node:18-alpine
 WORKDIR /app
 
 # Copy package files
-COPY package.json ./
+COPY package.json package-lock.json ./
 COPY api-server/package.json ./api-server/
 
 # Install dependencies for API server
 WORKDIR /app/api-server
-RUN npm ci --production
+RUN npm install --production
 
 # Copy application code
 COPY api-server/server.js ./
@@ -28,5 +28,6 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
 
 # Start server
 CMD ["node", "server.js"]
+
 
 
