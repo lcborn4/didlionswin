@@ -20,6 +20,7 @@ const imageFacts = [
 // API endpoints - use local API routes in development, App Runner in production
 // In development (localhost), use local API routes to avoid cold starts
 // In production, use AWS App Runner (always warm, no cold starts)
+// App Runner URL is set via NEXT_PUBLIC_APP_RUNNER_URL GitHub secret
 const getApiBase = () => {
   if (typeof window !== 'undefined') {
     // Client-side: check if we're on localhost
