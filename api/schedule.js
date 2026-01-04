@@ -363,7 +363,7 @@ export const handler = async (event, context) => {
                 additionalGames.sort((a, b) => new Date(a.date) - new Date(b.date));
                 for (const game of additionalGames) {
                     const gameDate = new Date(game.date);
-                    if (gameDate.getTime() > nowWithBuffer.getTime()) {
+                    if (gameDate.getTime() > nowTime) {
                         result.nextGame = await formatGame(game);
                         break;
                     }
