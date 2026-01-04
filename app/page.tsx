@@ -37,7 +37,9 @@ const getApiBase = () => {
   // Ensure we have a valid URL (not empty string)
   if (appRunnerUrl && appRunnerUrl.trim() !== '') {
     // Ensure it has https:// prefix
-    return appRunnerUrl.startsWith('http') ? appRunnerUrl : `https://${appRunnerUrl}`;
+    let url = appRunnerUrl.startsWith('http') ? appRunnerUrl : `https://${appRunnerUrl}`;
+    // App Runner server uses /api prefix for all routes
+    return url.endsWith('/api') ? url : `${url}/api`;
   }
   if (apiBase && apiBase.trim() !== '') {
     return apiBase;
