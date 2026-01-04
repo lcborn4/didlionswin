@@ -78,6 +78,7 @@ jobs:
             "SourceConfiguration": {
               "ImageRepository": {
                 "ImageIdentifier": "${IMAGE_URI}",
+                "ImageRepositoryType": "ECR",
                 "ImageConfiguration": {
                   "Port": "8080",
                   "RuntimeEnvironmentVariables": {
