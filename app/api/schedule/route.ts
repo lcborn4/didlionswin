@@ -25,7 +25,11 @@ export async function GET(request: NextRequest) {
     const result = await handler(event, {} as any);
 
     // Convert Lambda response to Next.js response
-    const headers = new Headers(result.headers || {});
+    // Filter out undefined values from headers
+    const headerEntries: [string, string][] = result.headers 
+      ? Object.entries(result.headers).filter(([_, v]) => v !== undefined && v !== null).map(([k, v]) => [k, String(v)])
+      : [];
+    const headers = new Headers(headerEntries);
     const body = result.body;
 
     return new NextResponse(body, {
