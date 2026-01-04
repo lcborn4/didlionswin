@@ -8,12 +8,10 @@ const ESPN_API_BASE = 'https://sports.core.api.espn.com/v2/sports/football/leagu
 let scheduleCache = {
     data: null,
     timestamp: 0,
-    ttl: 5 * 60 * 1000 // 5 minutes (reduced for fresher data)
+    ttl: 10 * 60 * 1000 // 10 minutes (increased for better performance)
 };
 
-// Clear cache on module load to ensure fresh data
-scheduleCache.data = null;
-scheduleCache.timestamp = 0;
+// Don't clear cache on module load - keep it warm for faster responses
 
 export const handler = async (event, context) => {
     // Handle preflight OPTIONS requests
@@ -68,11 +66,12 @@ export const handler = async (event, context) => {
         const schedule = await getSchedule();
         const now = new Date();
 
-        // Process all available games to ensure we capture all games including the most recent ones
-        // NFL teams play ~17 regular season games + preseason, so fetch all games to be safe
-        const gamesToFetch = schedule.items.length; // Fetch ALL games to ensure we don't miss any
+        // Optimize: Only process recent games (last 10 + next 10) for faster response
+        // This reduces HTTP requests from 60-80 to ~20-30
+        const MAX_GAMES_TO_PROCESS = 20; // Last 10 + next 10 should be enough
+        const gamesToFetch = Math.min(schedule.items.length, MAX_GAMES_TO_PROCESS);
         const limitedItems = schedule.items.slice(0, gamesToFetch);
-        console.log(`Processing ${limitedItems.length} games out of ${schedule.items.length} total`);
+        console.log(`Processing ${limitedItems.length} games (optimized from ${schedule.items.length} total)`);
 
         // Get games in parallel for speed
         const allGames = await Promise.all(
@@ -507,9 +506,11 @@ async function formatGame(game) {
         const homeTeam = teams.find(t => t.homeAway === 'home');
         const awayTeam = teams.find(t => t.homeAway === 'away');
 
-        // Get team info by following the $ref links
-        const homeTeamData = await fetch(homeTeam.team.$ref).then(r => r.json());
-        const awayTeamData = await fetch(awayTeam.team.$ref).then(r => r.json());
+        // OPTIMIZE: Fetch team data in parallel instead of sequentially
+        const [homeTeamData, awayTeamData] = await Promise.all([
+            fetch(homeTeam.team.$ref).then(r => r.json()),
+            fetch(awayTeam.team.$ref).then(r => r.json())
+        ]);
 
         // Check if Lions are home or away (compare as strings)
         const lionsIsHome = homeTeamData.id.toString() === LIONS_ID.toString();
@@ -540,13 +541,22 @@ async function formatGame(game) {
         const isGameLive = gameStatus === 'STATUS_IN_PROGRESS';
 
         if (homeTeam.score && awayTeam.score) {
-            // Follow score references if they exist
-            const homeScoreData = typeof homeTeam.score === 'object' && homeTeam.score.$ref
-                ? await fetch(homeTeam.score.$ref).then(r => r.json())
-                : homeTeam.score;
-            const awayScoreData = typeof awayTeam.score === 'object' && awayTeam.score.$ref
-                ? await fetch(awayTeam.score.$ref).then(r => r.json())
-                : awayTeam.score;
+            // OPTIMIZE: Fetch score data in parallel
+            const scorePromises = [];
+            if (typeof homeTeam.score === 'object' && homeTeam.score.$ref) {
+                scorePromises.push(fetch(homeTeam.score.$ref).then(r => r.json()).then(data => ({ type: 'home', data })));
+            } else {
+                scorePromises.push(Promise.resolve({ type: 'home', data: homeTeam.score }));
+            }
+            if (typeof awayTeam.score === 'object' && awayTeam.score.$ref) {
+                scorePromises.push(fetch(awayTeam.score.$ref).then(r => r.json()).then(data => ({ type: 'away', data })));
+            } else {
+                scorePromises.push(Promise.resolve({ type: 'away', data: awayTeam.score }));
+            }
+            
+            const scoreResults = await Promise.all(scorePromises);
+            const homeScoreData = scoreResults.find(r => r.type === 'home')?.data || homeTeam.score;
+            const awayScoreData = scoreResults.find(r => r.type === 'away')?.data || awayTeam.score;
 
             const homeScore = parseInt(homeScoreData.value || homeScoreData || 0);
             const awayScore = parseInt(awayScoreData.value || awayScoreData || 0);

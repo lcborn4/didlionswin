@@ -1,0 +1,22 @@
+version: 1.0
+runtime: docker
+build:
+  commands:
+    build:
+      - echo "Building API server..."
+      - docker build -t didlionswin-api:latest .
+run:
+  runtime-version: 18
+  command: node api-server/server.js
+  network:
+    port: 8080
+    env: PORT
+  env:
+    - name: NODE_ENV
+      value: production
+    - name: ESPN_API_URL
+      value: https://sports.core.api.espn.com/v2/sports/football/leagues/nfl
+    - name: LIONS_TEAM_ID
+      value: "8"
+
+

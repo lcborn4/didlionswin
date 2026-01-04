@@ -1,0 +1,20 @@
+{
+  "name": "didlionswin-api-server",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Express server for AWS App Runner - combines all API endpoints",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "dependencies": {
+    "express": "^4.21.1",
+    "cors": "^2.8.5"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
+
+

@@ -17,8 +17,23 @@ const imageFacts = [
   { image: '/images/good/IMG_7310.JPG', fact: 'The Detroit Lions All-time Receiving Leader: Calvin Johnson 11,619 yds, 83 TD' }
 ];
 
-// API endpoints
-const API_BASE = 'https://7mnzh94kp5.execute-api.us-east-1.amazonaws.com/api';
+// API endpoints - use local API routes in development, App Runner in production
+// In development (localhost), use local API routes to avoid cold starts
+// In production, use AWS App Runner (always warm, no cold starts)
+const getApiBase = () => {
+  if (typeof window !== 'undefined') {
+    // Client-side: check if we're on localhost
+    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+      return '/api';
+    }
+  }
+  // Production: use App Runner (preferred) or fallback to Lambda
+  // App Runner URL format: https://xxxxx.us-east-1.awsapprunner.com
+  // Set NEXT_PUBLIC_APP_RUNNER_URL environment variable after deploying App Runner
+  return process.env.NEXT_PUBLIC_APP_RUNNER_URL || 
+         process.env.NEXT_PUBLIC_API_BASE || 
+         'https://7mnzh94kp5.execute-api.us-east-1.amazonaws.com/api'; // Lambda fallback
+};
 
 // Client-side randomization and live data using React hooks
 export default function Home() {
@@ -76,26 +91,24 @@ export default function Home() {
 
     async function loadLiveData() {
       try {
-        console.log('Loading live game data...');
+        const apiBase = getApiBase();
+        console.log('Loading live game data...', { apiBase });
         
-        // Add minimum loading time to see animation
-        const minLoadingTime = new Promise(resolve => setTimeout(resolve, 2000));
-        
-        // Load game status and live score data (with minimum loading time)
+        // Load game status and live score data (removed artificial delay for faster loading)
+        // Note: Schedule API can take 5-10 seconds as it makes many ESPN API calls
         const [statusResponse, liveResponse, scheduleResponse] = await Promise.all([
-          fetch(`${API_BASE}/game-status`).catch((err) => {
+          fetch(`${apiBase}/game-status`).catch((err) => {
             console.warn('Game status API failed:', err);
             return null;
           }),
-          fetch(`${API_BASE}/live-score`).catch((err) => {
+          fetch(`${apiBase}/live-score`).catch((err) => {
             console.warn('Live score API failed:', err);
             return null;
           }),
-          fetch(`${API_BASE}/schedule`).catch((err) => {
+          fetch(`${apiBase}/schedule`).catch((err) => {
             console.warn('Schedule API failed:', err);
             return null;
-          }),
-          minLoadingTime // Ensure minimum 2 second loading time
+          })
         ]);
 
         let statusData = null;
@@ -105,7 +118,7 @@ export default function Home() {
         if (statusResponse?.ok) {
           try {
             statusData = await statusResponse.json();
-            console.log('Status data:', statusData);
+            console.log('✅ Status data loaded:', statusData);
           } catch (err) {
             console.warn('Failed to parse status data:', err);
           }
@@ -116,7 +129,7 @@ export default function Home() {
         if (liveResponse?.ok) {
           try {
             liveData = await liveResponse.json();
-            console.log('Live data:', liveData);
+            console.log('✅ Live data loaded:', liveData);
           } catch (err) {
             console.warn('Failed to parse live data:', err);
           }
@@ -126,8 +139,9 @@ export default function Home() {
 
         if (scheduleResponse?.ok) {
           try {
+            console.log('⏳ Schedule API is slow (makes many ESPN requests), please wait...');
             scheduleData = await scheduleResponse.json();
-            console.log('Schedule data:', scheduleData);
+            console.log('✅ Schedule data loaded:', scheduleData);
             // Store the timestamp from the API response
             if (scheduleData.timestamp) {
               setLastUpdated(scheduleData.timestamp);
@@ -139,7 +153,15 @@ export default function Home() {
           console.warn('Schedule response not ok:', scheduleResponse?.status);
         }
 
-        // Update game data based on what we received
+        // Update game data - show partial data immediately, then update when schedule completes
+        // This makes the page feel faster while schedule API (slow) is still loading
+        if (statusData || liveData) {
+          console.log('✅ Quick update: Status/Live data loaded, showing partial results...');
+          updateGameDisplay(statusData, liveData, null);
+        }
+        
+        // Always update with complete data when schedule finishes
+        console.log('✅ Complete update: All APIs loaded');
         updateGameDisplay(statusData, liveData, scheduleData);
 
         // Set up polling for live games

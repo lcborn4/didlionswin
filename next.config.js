@@ -24,6 +24,11 @@ const nextConfig = {
     env: {
         LIVE_SCORE_API: process.env.LIVE_SCORE_API || 'https://api.didlionswin.com',
         ESPN_API_BASE: 'https://sports.core.api.espn.com/v2/sports/football/leagues/nfl',
+        // App Runner URL - set this after deploying App Runner
+        // Get URL with: aws apprunner list-services --query "ServiceSummaryList[?ServiceName=='didlionswin-api'].ServiceUrl" --output text
+        NEXT_PUBLIC_APP_RUNNER_URL: process.env.NEXT_PUBLIC_APP_RUNNER_URL || '',
+        // Fallback to Lambda if App Runner URL not set
+        NEXT_PUBLIC_API_BASE: process.env.NEXT_PUBLIC_API_BASE || '',
     },
     // Enable static optimization
     compiler: {

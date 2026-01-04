@@ -1,0 +1,31 @@
+{
+  "ServiceName": "didlionswin-api",
+  "SourceConfiguration": {
+    "ImageRepository": {
+      "ImageIdentifier": "YOUR_ECR_REPO_URI:latest",
+      "ImageConfiguration": {
+        "Port": "8080",
+        "RuntimeEnvironmentVariables": {
+          "NODE_ENV": "production",
+          "ESPN_API_URL": "https://sports.core.api.espn.com/v2/sports/football/leagues/nfl",
+          "LIONS_TEAM_ID": "8"
+        }
+      }
+    },
+    "AutoDeploymentsEnabled": true
+  },
+  "InstanceConfiguration": {
+    "Cpu": "0.5 vCPU",
+    "Memory": "1 GB"
+  },
+  "HealthCheckConfiguration": {
+    "Protocol": "HTTP",
+    "Path": "/api/health",
+    "Interval": 10,
+    "Timeout": 5,
+    "HealthyThreshold": 1,
+    "UnhealthyThreshold": 5
+  }
+}
+
+

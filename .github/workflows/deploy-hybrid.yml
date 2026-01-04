@@ -10,6 +10,7 @@ env:
   AWS_REGION: "us-east-1"
   S3_BUCKET: ${{ secrets.S3_BUCKET }}
   CLOUDFRONT_DISTRIBUTION_ID: ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }}
+  NEXT_PUBLIC_APP_RUNNER_URL: ${{ secrets.NEXT_PUBLIC_APP_RUNNER_URL }}
 
 jobs:
   deploy-static:
@@ -31,9 +32,12 @@ jobs:
       - name: 🔨 Build static site
         run: |
           echo "Building hybrid static site..."
+          echo "Using App Runner URL: ${NEXT_PUBLIC_APP_RUNNER_URL:-'Not set (will use Lambda fallback)'}"
           # Build with the hybrid config (already in next.config.js)
           npm run build
           echo "✅ Static build complete!"
+        env:
+          NEXT_PUBLIC_APP_RUNNER_URL: ${{ secrets.NEXT_PUBLIC_APP_RUNNER_URL }}
 
       - name: 🔧 Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
