@@ -132,10 +132,10 @@ jobs:
                     "ESPN_API_URL": "https://sports.core.api.espn.com/v2/sports/football/leagues/nfl",
                     "LIONS_TEAM_ID": "8"
                   }
-                },
-                "AccessRoleArn": "${{ steps.create-role.outputs.role_arn }}"
+                }
               },
-              "AutoDeploymentsEnabled": true
+              "AutoDeploymentsEnabled": true,
+              "AccessRoleArn": "${{ steps.create-role.outputs.role_arn }}"
             },
             "InstanceConfiguration": {
               "Cpu": "0.5 vCPU",
