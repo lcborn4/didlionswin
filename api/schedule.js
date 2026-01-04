@@ -66,9 +66,9 @@ export const handler = async (event, context) => {
         const schedule = await getSchedule();
         const now = new Date();
 
-        // Optimize: Only process recent games (last 10 + next 10) for faster response
-        // This reduces HTTP requests from 60-80 to ~20-30
-        const MAX_GAMES_TO_PROCESS = 20; // Last 10 + next 10 should be enough
+        // Optimize: Only process recent games (last 6 + next 6) for faster response
+        // This reduces HTTP requests significantly while still getting the games we need
+        const MAX_GAMES_TO_PROCESS = 12; // Last 6 + next 6 should be enough for most cases
         const gamesToFetch = Math.min(schedule.items.length, MAX_GAMES_TO_PROCESS);
         const limitedItems = schedule.items.slice(0, gamesToFetch);
         console.log(`Processing ${limitedItems.length} games (optimized from ${schedule.items.length} total)`);
@@ -165,35 +165,43 @@ export const handler = async (event, context) => {
         // A game could be live even if it started hours ago (overtime, delays, etc.)
         let liveGameFound = false;
 
-        // First, check games within the last 12 hours to see if any are live
+        // OPTIMIZE: Check games within the last 12 hours in parallel for live status
         // This catches games that started earlier but are still in progress
-        for (let i = 0; i < Math.min(allGames.length, 10); i++) {
-            const gameDate = new Date(allGames[i].date);
-            const gameTime = gameDate.getTime();
-            const hoursDiff = Math.abs(gameTime - nowTime) / (1000 * 60 * 60);
+        const recentGamesToCheck = allGames.slice(0, Math.min(allGames.length, 8))
+            .filter((game, i) => {
+                const gameDate = new Date(game.date);
+                const gameTime = gameDate.getTime();
+                const hoursDiff = Math.abs(gameTime - nowTime) / (1000 * 60 * 60);
+                return hoursDiff <= 12; // Check games from the past 12 hours or next 6 hours
+            });
 
-            // Check games from the past 12 hours (could be live) or next 6 hours (might start soon)
-            if (hoursDiff <= 12) {
-                try {
-                    const gameData = await formatGame(allGames[i]);
-                    // If this game is live, it becomes the currentGame
-                    if (gameData.isLive || gameData.status === 'STATUS_IN_PROGRESS') {
+        // Format recent games in parallel (much faster than sequential)
+        if (recentGamesToCheck.length > 0) {
+            try {
+                const recentGameData = await Promise.all(
+                    recentGamesToCheck.map(game => formatGame(game).catch(err => {
+                        console.error(`Error formatting game ${game.id}:`, err);
+                        return null;
+                    }))
+                );
+
+                // Find live game from the formatted data
+                for (let i = 0; i < recentGameData.length; i++) {
+                    const gameData = recentGameData[i];
+                    if (gameData && (gameData.isLive || gameData.status === 'STATUS_IN_PROGRESS')) {
                         result.currentGame = gameData;
                         liveGameFound = true;
-
-                        // Don't include live game as latestGame - find the most recent completed one
-                        mostRecentCompletedGame = null;
-                        mostRecentCompletedTime = 0;
+                        const liveGameIndex = allGames.findIndex(g => g.id === recentGamesToCheck[i].id);
 
                         // Find the most recent COMPLETED game (before the live game)
-                        // Search backwards from the live game to find the most recent completed game
-                        for (let j = i - 1; j >= 0; j--) {
+                        // Search backwards from the live game
+                        for (let j = liveGameIndex - 1; j >= 0; j--) {
                             const otherGameDate = new Date(allGames[j].date);
                             const otherGameTime = otherGameDate.getTime();
                             if (otherGameTime < nowTime) {
+                                // Format this game to check if completed
                                 try {
                                     const otherGameData = await formatGame(allGames[j]);
-                                    // Check if this game is completed
                                     if (otherGameData.status === 'STATUS_FINAL' || otherGameData.status === 'STATUS_FINAL_OVERTIME' || otherGameData.result) {
                                         mostRecentCompletedGame = allGames[j];
                                         mostRecentCompletedTime = otherGameTime;
@@ -206,9 +214,9 @@ export const handler = async (event, context) => {
                         }
                         break; // Found live game, stop searching
                     }
-                } catch (error) {
-                    console.error(`Error checking game ${i} for live status:`, error);
                 }
+            } catch (error) {
+                console.error('Error checking recent games for live status:', error);
             }
         }
 

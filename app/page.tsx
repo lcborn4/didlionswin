@@ -112,75 +112,91 @@ export default function Home() {
           apiBaseEnv: process.env.NEXT_PUBLIC_API_BASE
         });
         
-        // Load game status and live score data (removed artificial delay for faster loading)
-        // Note: Schedule API can take 5-10 seconds as it makes many ESPN API calls
-        const [statusResponse, liveResponse, scheduleResponse] = await Promise.all([
-          fetch(`${apiBase}/game-status`).catch((err) => {
-            console.warn('Game status API failed:', err);
-            return null;
-          }),
-          fetch(`${apiBase}/live-score`).catch((err) => {
-            console.warn('Live score API failed:', err);
-            return null;
-          }),
-          fetch(`${apiBase}/schedule`).catch((err) => {
-            console.warn('Schedule API failed:', err);
+        // Load APIs separately to update UI progressively (don't wait for slow schedule API)
+        // Fast APIs (status, live-score) update immediately, schedule updates when ready
+        
+        let statusData: any = null;
+        let liveData: any = null;
+        let scheduleData: any = null;
+
+        // Start all API calls in parallel, but handle responses as they arrive
+        const statusPromise = fetch(`${apiBase}/game-status`)
+          .then(async (response) => {
+            if (response.ok) {
+              try {
+                const data = await response.json();
+                console.log('✅ Status data loaded:', data);
+                statusData = data;
+                // Update UI immediately with status data
+                updateGameDisplay(statusData, liveData, scheduleData);
+                return data;
+              } catch (err) {
+                console.warn('Failed to parse status data:', err);
+              }
+            } else {
+              console.warn('Status response not ok:', response.status);
+            }
             return null;
           })
-        ]);
+          .catch((err) => {
+            console.warn('Game status API failed:', err);
+            return null;
+          });
 
-        let statusData = null;
-        let liveData = null;
-        let scheduleData = null;
-
-        if (statusResponse?.ok) {
-          try {
-            statusData = await statusResponse.json();
-            console.log('✅ Status data loaded:', statusData);
-          } catch (err) {
-            console.warn('Failed to parse status data:', err);
-          }
-        } else {
-          console.warn('Status response not ok:', statusResponse?.status);
-        }
-
-        if (liveResponse?.ok) {
-          try {
-            liveData = await liveResponse.json();
-            console.log('✅ Live data loaded:', liveData);
-          } catch (err) {
-            console.warn('Failed to parse live data:', err);
-          }
-        } else {
-          console.warn('Live response not ok:', liveResponse?.status);
-        }
-
-        if (scheduleResponse?.ok) {
-          try {
-            console.log('⏳ Schedule API is slow (makes many ESPN requests), please wait...');
-            scheduleData = await scheduleResponse.json();
-            console.log('✅ Schedule data loaded:', scheduleData);
-            // Store the timestamp from the API response
-            if (scheduleData.timestamp) {
-              setLastUpdated(scheduleData.timestamp);
+        const livePromise = fetch(`${apiBase}/live-score`)
+          .then(async (response) => {
+            if (response.ok) {
+              try {
+                const data = await response.json();
+                console.log('✅ Live data loaded:', data);
+                liveData = data;
+                // Update UI immediately with live data
+                updateGameDisplay(statusData, liveData, scheduleData);
+                return data;
+              } catch (err) {
+                console.warn('Failed to parse live data:', err);
+              }
+            } else {
+              console.warn('Live response not ok:', response.status);
             }
-          } catch (err) {
-            console.warn('Failed to parse schedule data:', err);
-          }
-        } else {
-          console.warn('Schedule response not ok:', scheduleResponse?.status);
-        }
+            return null;
+          })
+          .catch((err) => {
+            console.warn('Live score API failed:', err);
+            return null;
+          });
 
-        // Update game data - show partial data immediately, then update when schedule completes
-        // This makes the page feel faster while schedule API (slow) is still loading
-        if (statusData || liveData) {
-          console.log('✅ Quick update: Status/Live data loaded, showing partial results...');
-          updateGameDisplay(statusData, liveData, null);
-        }
-        
-        // Always update with complete data when schedule finishes
-        console.log('✅ Complete update: All APIs loaded');
-        updateGameDisplay(statusData, liveData, scheduleData);
+        // Schedule API is slow - load it separately and update when ready
+        const schedulePromise = fetch(`${apiBase}/schedule`)
+          .then(async (response) => {
+            if (response.ok) {
+              try {
+                console.log('⏳ Schedule API loading (makes many ESPN requests)...');
+                const data = await response.json();
+                console.log('✅ Schedule data loaded:', data);
+                scheduleData = data;
+                // Store the timestamp from the API response
+                if (scheduleData.timestamp) {
+                  setLastUpdated(scheduleData.timestamp);
+                }
+                // Update UI with complete data when schedule finishes
+                updateGameDisplay(statusData, liveData, scheduleData);
+                return data;
+              } catch (err) {
+                console.warn('Failed to parse schedule data:', err);
+              }
+            } else {
+              console.warn('Schedule response not ok:', response.status);
+            }
+            return null;
+          })
+          .catch((err) => {
+            console.warn('Schedule API failed:', err);
+            return null;
+          });
+
+        // Wait for all to complete (for error handling)
+        await Promise.all([statusPromise, livePromise, schedulePromise]);
 
         // Set up polling for live games
         if (liveData?.isLive || statusData?.hasLiveGame) {
