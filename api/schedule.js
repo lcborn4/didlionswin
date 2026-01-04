@@ -66,23 +66,36 @@ export const handler = async (event, context) => {
         const schedule = await getSchedule();
         const now = new Date();
 
-        // Optimize: Only process recent games (last 6 + next 6) for faster response
-        // This reduces HTTP requests significantly while still getting the games we need
-        const MAX_GAMES_TO_PROCESS = 12; // Last 6 + next 6 should be enough for most cases
+        // Optimize: Only process recent games for faster response
+        // ESPN API typically returns items in reverse chronological order (newest first)
+        // But when combining multiple seasons, we need to ensure we get the most recent games
+        const MAX_GAMES_TO_PROCESS = 20; // Increased to ensure we get recent games from all seasons
+        
+        // Take games from the END of the schedule items array (most recent)
+        // ESPN typically returns newest first, but when combining seasons, take from end to be safe
         const gamesToFetch = Math.min(schedule.items.length, MAX_GAMES_TO_PROCESS);
-        const limitedItems = schedule.items.slice(0, gamesToFetch);
-        console.log(`Processing ${limitedItems.length} games (optimized from ${schedule.items.length} total)`);
+        const limitedItems = schedule.items.slice(-gamesToFetch); // Take last N items (most recent)
+        console.log(`Processing ${limitedItems.length} most recent games (from ${schedule.items.length} total)`);
 
         // Get games in parallel for speed
-        const allGames = await Promise.all(
+        const fetchedGames = await Promise.all(
             limitedItems.map(async (item) => {
-                const response = await fetch(item.$ref);
-                return await response.json();
+                try {
+                    const response = await fetch(item.$ref);
+                    return await response.json();
+                } catch (error) {
+                    console.error('Error fetching game:', error);
+                    return null;
+                }
             })
         );
-
-        // Sort games by date (oldest to newest)
-        allGames.sort((a, b) => new Date(a.date) - new Date(b.date));
+        
+        // Filter out nulls and sort games by date (oldest to newest)
+        const validGames = fetchedGames.filter(game => game !== null);
+        validGames.sort((a, b) => new Date(a.date) - new Date(b.date));
+        
+        // Use the sorted valid games
+        const allGamesSorted = validGames;
 
         // Find latest, previous, and next games based on current date
         let currentIndex = -1;
@@ -93,8 +106,8 @@ export const handler = async (event, context) => {
         // Use current date/time to determine game positions
         const nowTime = now.getTime();
 
-        for (let i = 0; i < allGames.length; i++) {
-            const gameDate = new Date(allGames[i].date);
+        for (let i = 0; i < allGamesSorted.length; i++) {
+            const gameDate = new Date(allGamesSorted[i].date);
             const gameTime = gameDate.getTime();
 
             // Next game = the first upcoming game (in the future from current date)
@@ -112,16 +125,16 @@ export const handler = async (event, context) => {
 
         // Find the most recent completed game by checking game status
         // Start from the most recent past games and check their status
-        console.log(`Checking ${allGames.length} games for completed status...`);
-        for (let i = allGames.length - 1; i >= 0; i--) {
-            const gameDate = new Date(allGames[i].date);
+        console.log(`Checking ${allGamesSorted.length} games for completed status...`);
+        for (let i = allGamesSorted.length - 1; i >= 0; i--) {
+            const gameDate = new Date(allGamesSorted[i].date);
             const gameTime = gameDate.getTime();
             
             // Only check past games
             if (gameTime <= nowTime) {
                 try {
-                    const gameData = await formatGame(allGames[i]);
-                    console.log(`Game ${i} (${allGames[i].name}): status=${gameData.status}, result=${gameData.result}, isLive=${gameData.isLive}, score=${gameData.score?.lions}-${gameData.score?.opponent}`);
+                    const gameData = await formatGame(allGamesSorted[i]);
+                    console.log(`Game ${i} (${allGamesSorted[i].name}): status=${gameData.status}, result=${gameData.result}, isLive=${gameData.isLive}, score=${gameData.score?.lions}-${gameData.score?.opponent}`);
                     // Check if game is completed:
                     // 1. Status is FINAL or FINAL_OVERTIME
                     // 2. Has a result (WIN/LOSS/TIE)
@@ -133,8 +146,8 @@ export const handler = async (event, context) => {
                     
                     if (isCompleted) {
                         // Found a completed game, this is our latest
-                        console.log(`Found completed game: ${allGames[i].name} (status=${gameData.status}, result=${gameData.result})`);
-                        mostRecentCompletedGame = allGames[i];
+                        console.log(`Found completed game: ${allGamesSorted[i].name} (status=${gameData.status}, result=${gameData.result})`);
+                        mostRecentCompletedGame = allGamesSorted[i];
                         mostRecentCompletedTime = gameTime;
                         break; // Found the most recent completed game, stop searching
                     }
@@ -167,7 +180,7 @@ export const handler = async (event, context) => {
 
         // OPTIMIZE: Check games within the last 12 hours in parallel for live status
         // This catches games that started earlier but are still in progress
-        const recentGamesToCheck = allGames.slice(0, Math.min(allGames.length, 8))
+        const recentGamesToCheck = allGamesSorted.slice(0, Math.min(allGamesSorted.length, 8))
             .filter((game, i) => {
                 const gameDate = new Date(game.date);
                 const gameTime = gameDate.getTime();
@@ -191,19 +204,19 @@ export const handler = async (event, context) => {
                     if (gameData && (gameData.isLive || gameData.status === 'STATUS_IN_PROGRESS')) {
                         result.currentGame = gameData;
                         liveGameFound = true;
-                        const liveGameIndex = allGames.findIndex(g => g.id === recentGamesToCheck[i].id);
+                        const liveGameIndex = allGamesSorted.findIndex(g => g.id === recentGamesToCheck[i].id);
 
                         // Find the most recent COMPLETED game (before the live game)
                         // Search backwards from the live game
                         for (let j = liveGameIndex - 1; j >= 0; j--) {
-                            const otherGameDate = new Date(allGames[j].date);
+                            const otherGameDate = new Date(allGamesSorted[j].date);
                             const otherGameTime = otherGameDate.getTime();
                             if (otherGameTime < nowTime) {
                                 // Format this game to check if completed
                                 try {
-                                    const otherGameData = await formatGame(allGames[j]);
+                                    const otherGameData = await formatGame(allGamesSorted[j]);
                                     if (otherGameData.status === 'STATUS_FINAL' || otherGameData.status === 'STATUS_FINAL_OVERTIME' || otherGameData.result) {
-                                        mostRecentCompletedGame = allGames[j];
+                                        mostRecentCompletedGame = allGamesSorted[j];
                                         mostRecentCompletedTime = otherGameTime;
                                         break; // Found the most recent completed game
                                     }
@@ -222,12 +235,12 @@ export const handler = async (event, context) => {
 
         // If no live game found, check the time-based currentIndex for scheduled/upcoming games
         if (!liveGameFound && currentIndex >= 0) {
-            const currentGameData = await formatGame(allGames[currentIndex]);
+            const currentGameData = await formatGame(allGamesSorted[currentIndex]);
 
             if (currentGameData.status === 'STATUS_FINAL' || currentGameData.status === 'STATUS_FINAL_OVERTIME') {
                 // Game is finished - it's the latest game, not current
                 result.latestGame = currentGameData;
-                mostRecentCompletedGame = allGames[currentIndex];
+                mostRecentCompletedGame = allGamesSorted[currentIndex];
             } else if (currentGameData.status === 'STATUS_SCHEDULED') {
                 // Game is scheduled but not started yet - it's the current/next game
                 result.currentGame = currentGameData;
@@ -252,20 +265,20 @@ export const handler = async (event, context) => {
             let previousGameTime = 0;
 
             // Search all games to find the one before the latest game
-            for (let i = 0; i < allGames.length; i++) {
+            for (let i = 0; i < allGamesSorted.length; i++) {
                 // Skip the latest game itself
-                if (allGames[i].id === mostRecentCompletedGame.id) continue;
+                if (allGamesSorted[i].id === mostRecentCompletedGame.id) continue;
 
-                const gameDate = new Date(allGames[i].date);
+                const gameDate = new Date(allGamesSorted[i].date);
                 const gameTime = gameDate.getTime();
 
                 // Find the game that's before the latest game but closest to it
                 if (gameTime < latestGameDate.getTime() && gameTime > previousGameTime) {
                     // Verify this game is completed before considering it
                     try {
-                        const gameData = await formatGame(allGames[i]);
+                        const gameData = await formatGame(allGamesSorted[i]);
                         if (gameData.status === 'STATUS_FINAL' || gameData.status === 'STATUS_FINAL_OVERTIME' || gameData.result) {
-                            previousGame = allGames[i];
+                            previousGame = allGamesSorted[i];
                             previousGameTime = gameTime;
                         }
                     } catch (error) {
@@ -284,17 +297,17 @@ export const handler = async (event, context) => {
             let previousGame = null;
             let previousGameTime = 0;
 
-            for (let i = 0; i < allGames.length; i++) {
-                if (allGames[i].id === mostRecentCompletedGame.id) continue;
+            for (let i = 0; i < allGamesSorted.length; i++) {
+                if (allGamesSorted[i].id === mostRecentCompletedGame.id) continue;
 
-                const gameDate = new Date(allGames[i].date);
+                const gameDate = new Date(allGamesSorted[i].date);
                 const gameTime = gameDate.getTime();
 
                 if (gameTime < latestGameDate.getTime() && gameTime > previousGameTime) {
                     try {
-                        const gameData = await formatGame(allGames[i]);
+                        const gameData = await formatGame(allGamesSorted[i]);
                         if (gameData.status === 'STATUS_FINAL' || gameData.status === 'STATUS_FINAL_OVERTIME' || gameData.result) {
-                            previousGame = allGames[i];
+                            previousGame = allGamesSorted[i];
                             previousGameTime = gameTime;
                         }
                     } catch (error) {
@@ -310,10 +323,10 @@ export const handler = async (event, context) => {
 
         // Next game = the upcoming game (first game in the future)
         if (nextUpcomingIndex >= 0) {
-            const nextGameDate = new Date(allGames[nextUpcomingIndex].date);
+            const nextGameDate = new Date(allGamesSorted[nextUpcomingIndex].date);
             // Double-check that this game is actually in the future
             if (nextGameDate.getTime() > nowTime) {
-                result.nextGame = await formatGame(allGames[nextUpcomingIndex]);
+                result.nextGame = await formatGame(allGamesSorted[nextUpcomingIndex]);
             } else {
                 // Game is in the past, check if there are more games to fetch
                 console.log('Next game found is in the past, checking for more games...');
@@ -382,14 +395,14 @@ export const handler = async (event, context) => {
         }
 
         console.log('Schedule processed:', {
-            total: allGames.length,
+            total: allGamesSorted.length,
             latestGame: mostRecentCompletedGame ? {
                 date: new Date(mostRecentCompletedGame.date).toISOString(),
                 name: mostRecentCompletedGame.name
             } : 'none',
-            nextGame: nextUpcomingIndex >= 0 && allGames[nextUpcomingIndex] ? {
-                date: new Date(allGames[nextUpcomingIndex].date).toISOString(),
-                name: allGames[nextUpcomingIndex].name
+            nextGame: nextUpcomingIndex >= 0 && allGamesSorted[nextUpcomingIndex] ? {
+                date: new Date(allGamesSorted[nextUpcomingIndex].date).toISOString(),
+                name: allGamesSorted[nextUpcomingIndex].name
             } : 'none',
             current: currentIndex,
             nowTime: new Date().toISOString()
