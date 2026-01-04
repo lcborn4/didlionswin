@@ -10,7 +10,7 @@
 
     "build:server": "node scripts/build-server.js",
     "start": "next start",
-    "lint": "next lint",
+    "lint": "next lint"
   },
   "dependencies": {
     "@types/node": "18.15.5",
