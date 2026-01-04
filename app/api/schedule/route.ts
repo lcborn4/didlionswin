@@ -1,9 +1,11 @@
 // Next.js API route handler for schedule - wraps Lambda handler for local development
-import { handler } from '../../../api/schedule.js';
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(request: NextRequest) {
   try {
+    // Dynamic import to avoid webpack issues with ESM modules
+    const { handler } = await import('../../../api/schedule.js');
+    
     // Convert Next.js request to Lambda event format
     const url = new URL(request.url);
     const queryParams: Record<string, string> = {};

@@ -1,9 +1,11 @@
 // Next.js API route handler for game-status - wraps Lambda handler for local development
-import { handler } from '../../../api/game-status.js';
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(request: NextRequest) {
   try {
+    // Dynamic import to avoid webpack issues with ESM modules
+    const { handler } = await import('../../../api/game-status.js');
+    
     // Convert Next.js request to Lambda event format
     const url = new URL(request.url);
     const queryParams: Record<string, string> = {};
