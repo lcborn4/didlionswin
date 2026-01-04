@@ -31,9 +31,19 @@ const getApiBase = () => {
   // Production: use App Runner (preferred) or fallback to Lambda
   // App Runner URL format: https://xxxxx.us-east-1.awsapprunner.com
   // Set NEXT_PUBLIC_APP_RUNNER_URL environment variable after deploying App Runner
-  return process.env.NEXT_PUBLIC_APP_RUNNER_URL || 
-         process.env.NEXT_PUBLIC_API_BASE || 
-         'https://7mnzh94kp5.execute-api.us-east-1.amazonaws.com/api'; // Lambda fallback
+  const appRunnerUrl = process.env.NEXT_PUBLIC_APP_RUNNER_URL;
+  const apiBase = process.env.NEXT_PUBLIC_API_BASE;
+  
+  // Ensure we have a valid URL (not empty string)
+  if (appRunnerUrl && appRunnerUrl.trim() !== '') {
+    // Ensure it has https:// prefix
+    return appRunnerUrl.startsWith('http') ? appRunnerUrl : `https://${appRunnerUrl}`;
+  }
+  if (apiBase && apiBase.trim() !== '') {
+    return apiBase;
+  }
+  // Lambda fallback
+  return 'https://7mnzh94kp5.execute-api.us-east-1.amazonaws.com/api';
 };
 
 // Client-side randomization and live data using React hooks
@@ -93,7 +103,12 @@ export default function Home() {
     async function loadLiveData() {
       try {
         const apiBase = getApiBase();
-        console.log('Loading live game data...', { apiBase });
+        console.log('Loading live game data...', { 
+          apiBase, 
+          hostname: typeof window !== 'undefined' ? window.location.hostname : 'server',
+          appRunnerUrl: process.env.NEXT_PUBLIC_APP_RUNNER_URL,
+          apiBaseEnv: process.env.NEXT_PUBLIC_API_BASE
+        });
         
         // Load game status and live score data (removed artificial delay for faster loading)
         // Note: Schedule API can take 5-10 seconds as it makes many ESPN API calls
