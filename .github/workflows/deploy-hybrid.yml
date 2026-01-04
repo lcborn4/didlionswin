@@ -1,4 +1,4 @@
-name: Deploy Hybrid Static + Serverless (BEST FOR LIVE SCORES)
+name: Deploy Static Site
 
 on:
   push:
@@ -32,7 +32,7 @@ jobs:
       - name: 🔨 Build static site
         run: |
           echo "Building hybrid static site..."
-          echo "Using App Runner URL: ${NEXT_PUBLIC_APP_RUNNER_URL:-'Not set (will use Lambda fallback)'}"
+          echo "Using App Runner URL: ${NEXT_PUBLIC_APP_RUNNER_URL:-'Not set'}"
           # Build with the hybrid config (already in next.config.js)
           npm run build
           echo "✅ Static build complete!"
@@ -76,54 +76,18 @@ jobs:
 
           echo "✅ CloudFront invalidation started: $INVALIDATION_ID"
 
-  deploy-api:
-    name: ⚡ Deploy Live Score API
-    runs-on: ubuntu-latest
-    steps:
-      - name: 🛎️ Checkout code
-        uses: actions/checkout@v4
-
-      - name: 🏗️ Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: "npm"
-
-      - name: 📦 Install dependencies
-        run: npm ci
-
-      - name: 🔧 Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ env.AWS_REGION }}
-
-      - name: 🚀 Deploy Serverless API
-        run: |
-          echo "Deploying live score API..."
-          npx serverless deploy --config serverless-api.yml --verbose
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-
-      - name: 📊 Get API endpoints
-        run: |
-          echo "🔗 Getting API Gateway endpoints..."
-          npx serverless info --config serverless-api.yml
-
   notify:
     name: ✅ Deployment Complete
     runs-on: ubuntu-latest
-    needs: [deploy-static, deploy-api]
+    needs: [deploy-static]
     steps:
       - name: 🎉 Success notification
         run: |
-          echo "🎉 Hybrid deployment completed successfully!"
+          echo "🎉 Static site deployment completed successfully!"
           echo ""
           echo "🌐 Static Site: Fast loading from CDN"
-          echo "⚡ Live API: Real-time scores during games"
-          echo "💰 Cost: $3-8/month (90% savings)"
-          echo "🚀 Performance: Best of both worlds!"
+          echo "⚡ API: AWS App Runner (always warm, no cold starts)"
+          echo "💰 Cost: Low cost static hosting + App Runner"
+          echo "🚀 Performance: Fast and reliable!"
           echo ""
-          echo "✅ Ready for live score updates during Lions games!"
+          echo "✅ Site is live and ready!"
