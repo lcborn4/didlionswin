@@ -135,7 +135,9 @@ jobs:
                 }
               },
               "AutoDeploymentsEnabled": true,
-              "AccessRoleArn": "${{ steps.create-role.outputs.role_arn }}"
+              "AuthenticationConfiguration": {
+                "AccessRoleArn": "${{ steps.create-role.outputs.role_arn }}"
+              }
             },
             "InstanceConfiguration": {
               "Cpu": "0.5 vCPU",
