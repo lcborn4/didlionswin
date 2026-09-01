@@ -62,24 +62,17 @@ export const handler = async (event, context) => {
             };
         }
 
-        // Get current schedule
+        // Get current schedule (preseason + regular + prior season, deduped)
         const schedule = await getSchedule();
         const now = new Date();
 
-        // Optimize: Only process recent games for faster response
-        // ESPN API typically returns items in reverse chronological order (newest first)
-        // But when combining multiple seasons, we need to ensure we get the most recent games
-        const MAX_GAMES_TO_PROCESS = 20; // Increased to ensure we get recent games from all seasons
-        
-        // Take games from the END of the schedule items array (most recent)
-        // ESPN typically returns newest first, but when combining seasons, take from end to be safe
-        const gamesToFetch = Math.min(schedule.items.length, MAX_GAMES_TO_PROCESS);
-        const limitedItems = schedule.items.slice(-gamesToFetch); // Take last N items (most recent)
-        console.log(`Processing ${limitedItems.length} most recent games (from ${schedule.items.length} total)`);
+        // Fetch ALL game stubs so we can pick the correct latest/next by date.
+        // Previously we sliced the last N concatenated items, which dropped early
+        // regular-season games and (when preseason was omitted) late August games.
+        console.log(`Processing ${schedule.items.length} schedule games`);
 
-        // Get games in parallel for speed
         const fetchedGames = await Promise.all(
-            limitedItems.map(async (item) => {
+            schedule.items.map(async (item) => {
                 try {
                     const response = await fetch(item.$ref);
                     return await response.json();
@@ -90,12 +83,18 @@ export const handler = async (event, context) => {
             })
         );
         
-        // Filter out nulls and sort games by date (oldest to newest)
-        const validGames = fetchedGames.filter(game => game !== null);
-        validGames.sort((a, b) => new Date(a.date) - new Date(b.date));
-        
-        // Use the sorted valid games
-        const allGamesSorted = validGames;
+        // Filter out nulls, dedupe by id, and sort by date (oldest to newest)
+        const seenIds = new Set();
+        const allGamesSorted = fetchedGames
+            .filter(game => {
+                if (!game || !game.id) return false;
+                const id = game.id.toString();
+                if (seenIds.has(id)) return false;
+                seenIds.add(id);
+                return true;
+            })
+            .sort((a, b) => new Date(a.date) - new Date(b.date));
+        const gamesToFetch = allGamesSorted.length;
 
         // Find latest, previous, and next games based on current date
         let currentIndex = -1;
@@ -169,7 +168,7 @@ export const handler = async (event, context) => {
             latestGame: null,
             nextGame: null,
             season: {
-                type: 'regular',
+                type: getSeasonPhase(),
                 year: currentYear
             }
         };
@@ -408,6 +407,12 @@ export const handler = async (event, context) => {
             nowTime: new Date().toISOString()
         });
 
+        // Prefer the latest/current game's season type for the summary field
+        const seasonTypeSource = result.currentGame || result.latestGame || result.nextGame;
+        if (seasonTypeSource?.seasonType && seasonTypeSource.seasonType !== 'unknown') {
+            result.season.type = seasonTypeSource.seasonType;
+        }
+
         // Cache the result
         scheduleCache.data = result;
         scheduleCache.timestamp = currentTime;
@@ -447,52 +452,66 @@ export const handler = async (event, context) => {
 
 // Helper function to determine current NFL season year
 // NFL season spans two calendar years (Sept - Feb)
+function getEasternDateParts(date = new Date()) {
+    // Season boundaries should follow NFL/ET, not the Lambda host's UTC calendar day
+    const parts = new Intl.DateTimeFormat('en-US', {
+        timeZone: 'America/New_York',
+        year: 'numeric',
+        month: 'numeric',
+        day: 'numeric'
+    }).formatToParts(date);
+
+    const get = (type) => parseInt(parts.find(p => p.type === type)?.value || '0', 10);
+    return { year: get('year'), month: get('month'), day: get('day') };
+}
+
 function getCurrentSeasonYear() {
-    const now = new Date();
-    const month = now.getMonth() + 1; // 1-12
-    const year = now.getFullYear();
+    const { year, month } = getEasternDateParts();
 
     // NFL regular season is Sept (9) - Jan (1), playoffs through Feb (2)
     // If we're in Jan-Feb, we're still in the previous year's season
     if (month <= 2) {
         return year - 1;
     }
-    // March-August: previous season ended, next season hasn't started
-    // But check current year for preseason games starting in August
-    if (month <= 8) {
-        return year;
-    }
+    // March-August: upcoming season year (preseason starts in August)
     // September-December: current year's season
     return year;
+}
+
+function getSeasonPhase() {
+    const { month } = getEasternDateParts();
+    // Rough phase for display; game-level seasonType is the source of truth
+    if (month >= 3 && month <= 7) return 'offseason';
+    if (month === 8) return 'preseason';
+    return 'regular';
+}
+
+function getSeasonTypeFromGame(game) {
+    const ref = game?.seasonType?.$ref || '';
+    if (ref.includes('/types/1')) return 'preseason';
+    if (ref.includes('/types/2')) return 'regular';
+    if (ref.includes('/types/3')) return 'postseason';
+    return 'unknown';
 }
 
 async function getSchedule() {
     const currentYear = getCurrentSeasonYear();
     const previousYear = currentYear - 1;
     const nextYear = currentYear + 1;
-    const now = new Date();
-    const month = now.getMonth() + 1; // 1-12
 
-    // During regular season (Sept-Feb), prioritize regular season games
-    // During offseason (Mar-Aug), include preseason games
-    const isRegularSeason = month >= 9 || month <= 2;
-
-    // Build URL list based on season
-    const urls = [];
-
-    if (isRegularSeason) {
-        // Regular season: prioritize current year regular season, skip preseason
-        urls.push(`${ESPN_API_BASE}/seasons/${currentYear}/types/2/teams/8/events`); // Current year regular season (PRIORITY)
-        urls.push(`${ESPN_API_BASE}/seasons/${previousYear}/types/2/teams/8/events`); // Previous year regular season (for Jan-Feb)
-        urls.push(`${ESPN_API_BASE}/seasons/${nextYear}/types/2/teams/8/events`); // Next year (if late in current season)
-    } else {
-        // Offseason: include preseason games for upcoming season
-        urls.push(`${ESPN_API_BASE}/seasons/${currentYear}/types/2/teams/8/events`); // Current year regular season
-        urls.push(`${ESPN_API_BASE}/seasons/${currentYear}/types/1/teams/8/events`); // Current year preseason
-        urls.push(`${ESPN_API_BASE}/seasons/${previousYear}/types/2/teams/8/events`); // Previous year regular season
-    }
+    // Always merge preseason + regular season. Skipping preseason once the
+    // calendar hits September (especially in UTC) hid just-finished August games
+    // and made "latest" jump back to last year's finale.
+    const urls = [
+        `${ESPN_API_BASE}/seasons/${currentYear}/types/1/teams/8/events`, // Current year preseason
+        `${ESPN_API_BASE}/seasons/${currentYear}/types/2/teams/8/events`, // Current year regular season
+        `${ESPN_API_BASE}/seasons/${previousYear}/types/2/teams/8/events`, // Previous year regular season
+        `${ESPN_API_BASE}/seasons/${previousYear}/types/3/teams/8/events`, // Previous year postseason
+        `${ESPN_API_BASE}/seasons/${nextYear}/types/2/teams/8/events` // Next year (late season)
+    ];
 
     let combinedSchedule = { items: [] };
+    const seenRefs = new Set();
 
     for (const url of urls) {
         try {
@@ -501,7 +520,12 @@ async function getSchedule() {
                 const data = await response.json();
                 if (data.items && data.items.length > 0) {
                     console.log(`Adding schedule from: ${url} (${data.items.length} games)`);
-                    combinedSchedule.items = combinedSchedule.items.concat(data.items);
+                    for (const item of data.items) {
+                        const key = item.$ref || item.id;
+                        if (key && seenRefs.has(key)) continue;
+                        if (key) seenRefs.add(key);
+                        combinedSchedule.items.push(item);
+                    }
                 }
             }
         } catch (error) {
@@ -603,6 +627,8 @@ async function formatGame(game) {
             }
         }
 
+        const seasonType = getSeasonTypeFromGame(game);
+
         return {
             id: game.id,
             name: game.name,
@@ -615,7 +641,8 @@ async function formatGame(game) {
             },
             result: isGameLive ? null : result, // Explicitly clear result if live
             status: gameStatus,
-            isLive: isGameLive
+            isLive: isGameLive,
+            seasonType
         };
     } catch (error) {
         console.error('Error formatting game:', error);
@@ -627,7 +654,8 @@ async function formatGame(game) {
             homeAway: 'unknown',
             score: { lions: 0, opponent: 0 },
             result: null,
-            status: 'UNKNOWN'
+            status: 'UNKNOWN',
+            seasonType: getSeasonTypeFromGame(game)
         };
     }
 }

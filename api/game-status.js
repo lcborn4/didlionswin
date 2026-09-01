@@ -35,15 +35,18 @@ export const handler = async (event, context) => {
             throw new Error('No games found in schedule');
         }
 
-        // Get the actual event data from the first few games
+        // Get the actual event data for all schedule items, then pick by date
         const recentGames = await Promise.all(
-            schedule.items.slice(0, 5).map(async (item) => {
+            schedule.items.map(async (item) => {
                 const response = await fetch(item.$ref);
                 return await response.json();
             })
         );
 
-        recentGames.forEach((event, index) => {
+        recentGames
+            .filter(Boolean)
+            .sort((a, b) => new Date(a.date) - new Date(b.date))
+            .forEach((event) => {
             const gameDate = new Date(event.date);
             const timeDiff = gameDate.getTime() - today.getTime();
             const hoursDiff = timeDiff / (1000 * 60 * 60);
@@ -114,34 +117,29 @@ export const handler = async (event, context) => {
 
             if (daysUntilNext > 30) {
                 gameStatus.season.isOffSeason = true;
-            } else if (daysUntilNext > 7) {
-                // Likely a bye week - more than 7 days until next game
+            } else if (daysUntilNext > 14) {
+                // Likely a bye week - more than 14 days until next game (preseason→Week 1 is usually ~12)
                 gameStatus.season.isByeWeek = true;
             }
         }
 
         // Check if we're in a bye week by looking at the schedule pattern
         if (!currentGame && !gameStatus.season.isOffSeason) {
-            // Look for gaps in the schedule that indicate bye weeks
-            const recentGames = await Promise.all(
-                schedule.items.slice(0, 10).map(async (item) => {
-                    const response = await fetch(item.$ref);
-                    return await response.json();
-                })
-            );
+            const sortedGames = [...recentGames].filter(Boolean).sort((a, b) => new Date(a.date) - new Date(b.date));
 
-            // Sort by date and check for gaps
-            recentGames.sort((a, b) => new Date(a.date) - new Date(b.date));
-
-            for (let i = 0; i < recentGames.length - 1; i++) {
-                const currentGameDate = new Date(recentGames[i].date);
-                const nextGameDate = new Date(recentGames[i + 1].date);
+            for (let i = 0; i < sortedGames.length - 1; i++) {
+                const currentGameDate = new Date(sortedGames[i].date);
+                const nextGameDate = new Date(sortedGames[i + 1].date);
                 const daysBetween = (nextGameDate.getTime() - currentGameDate.getTime()) / (1000 * 60 * 60 * 24);
 
-                // If there's a gap of 8-14 days and we're in the middle of it, it's likely a bye week
-                if (daysBetween >= 8 && daysBetween <= 14) {
-                    const today = new Date();
-                    if (today >= currentGameDate && today <= nextGameDate) {
+                // Regular-season bye gaps are typically 8-14 days; skip preseason→Week 1 gaps
+                const isPreToRegularGap =
+                    (sortedGames[i].seasonType?.$ref || '').includes('/types/1') &&
+                    (sortedGames[i + 1].seasonType?.$ref || '').includes('/types/2');
+
+                if (!isPreToRegularGap && daysBetween >= 8 && daysBetween <= 14) {
+                    const todayCheck = new Date();
+                    if (todayCheck >= currentGameDate && todayCheck <= nextGameDate) {
                         gameStatus.season.isByeWeek = true;
                         break;
                     }
@@ -192,22 +190,22 @@ export const handler = async (event, context) => {
 
 // Helper function to determine current NFL season year
 // NFL season spans two calendar years (Sept - Feb)
+function getEasternDateParts(date = new Date()) {
+    const parts = new Intl.DateTimeFormat('en-US', {
+        timeZone: 'America/New_York',
+        year: 'numeric',
+        month: 'numeric',
+        day: 'numeric'
+    }).formatToParts(date);
+    const get = (type) => parseInt(parts.find(p => p.type === type)?.value || '0', 10);
+    return { year: get('year'), month: get('month'), day: get('day') };
+}
+
 function getCurrentSeasonYear() {
-    const now = new Date();
-    const month = now.getMonth() + 1; // 1-12
-    const year = now.getFullYear();
-    
-    // NFL regular season is Sept (9) - Jan (1), playoffs through Feb (2)
-    // If we're in Jan-Feb, we're still in the previous year's season
+    const { year, month } = getEasternDateParts();
     if (month <= 2) {
         return year - 1;
     }
-    // March-August: previous season ended, next season hasn't started
-    // But check current year for preseason games starting in August
-    if (month <= 8) {
-        return year;
-    }
-    // September-December: current year's season
     return year;
 }
 
@@ -215,14 +213,16 @@ async function getSchedule() {
     const currentYear = getCurrentSeasonYear();
     const previousYear = currentYear - 1;
     const nextYear = currentYear + 1;
-    
-    // Try current year regular season first, then preseason, then previous year as fallback
+
     const urls = [
-        `${ESPN_API_BASE}/seasons/${currentYear}/types/2/teams/8/events`, // Current year regular season (PRIORITY)
-        `${ESPN_API_BASE}/seasons/${currentYear}/types/1/teams/8/events`, // Current year preseason
-        `${ESPN_API_BASE}/seasons/${previousYear}/types/2/teams/8/events`, // Previous year regular season (for Jan-Feb)
-        `${ESPN_API_BASE}/seasons/${nextYear}/types/2/teams/8/events`  // Next year (if late in current season)
+        `${ESPN_API_BASE}/seasons/${currentYear}/types/1/teams/8/events`,
+        `${ESPN_API_BASE}/seasons/${currentYear}/types/2/teams/8/events`,
+        `${ESPN_API_BASE}/seasons/${previousYear}/types/2/teams/8/events`,
+        `${ESPN_API_BASE}/seasons/${nextYear}/types/2/teams/8/events`
     ];
+
+    const combined = { items: [] };
+    const seen = new Set();
 
     for (const url of urls) {
         try {
@@ -230,8 +230,13 @@ async function getSchedule() {
             if (response.ok) {
                 const data = await response.json();
                 if (data.items && data.items.length > 0) {
-                    console.log(`Using schedule from: ${url}`);
-                    return data;
+                    console.log(`Adding game-status schedule from: ${url} (${data.items.length} games)`);
+                    for (const item of data.items) {
+                        const key = item.$ref || item.id;
+                        if (key && seen.has(key)) continue;
+                        if (key) seen.add(key);
+                        combined.items.push(item);
+                    }
                 }
             }
         } catch (error) {
@@ -239,7 +244,11 @@ async function getSchedule() {
         }
     }
 
-    throw new Error('No schedule data available');
+    if (combined.items.length === 0) {
+        throw new Error('No schedule data available');
+    }
+
+    return combined;
 }
 
 async function getGameDetails(gameId) {

@@ -81,22 +81,22 @@ export const handler = async (event, context) => {
 
 // Helper function to determine current NFL season year
 // NFL season spans two calendar years (Sept - Feb)
+function getEasternDateParts(date = new Date()) {
+    const parts = new Intl.DateTimeFormat('en-US', {
+        timeZone: 'America/New_York',
+        year: 'numeric',
+        month: 'numeric',
+        day: 'numeric'
+    }).formatToParts(date);
+    const get = (type) => parseInt(parts.find(p => p.type === type)?.value || '0', 10);
+    return { year: get('year'), month: get('month'), day: get('day') };
+}
+
 function getCurrentSeasonYear() {
-    const now = new Date();
-    const month = now.getMonth() + 1; // 1-12
-    const year = now.getFullYear();
-    
-    // NFL regular season is Sept (9) - Jan (1), playoffs through Feb (2)
-    // If we're in Jan-Feb, we're still in the previous year's season
+    const { year, month } = getEasternDateParts();
     if (month <= 2) {
         return year - 1;
     }
-    // March-August: previous season ended, next season hasn't started
-    // But check current year for preseason games starting in August
-    if (month <= 8) {
-        return year;
-    }
-    // September-December: current year's season
     return year;
 }
 
@@ -104,14 +104,18 @@ async function getSchedule() {
     const currentYear = getCurrentSeasonYear();
     const previousYear = currentYear - 1;
     const nextYear = currentYear + 1;
-    
-    // Try current year regular season first, then preseason, then previous year as fallback
+
+    // Merge preseason + regular so live games during August aren't missed once
+    // the regular-season schedule is already published.
     const urls = [
-        `${ESPN_API_BASE}/seasons/${currentYear}/types/2/teams/8/events`, // Current year regular season (PRIORITY)
-        `${ESPN_API_BASE}/seasons/${currentYear}/types/1/teams/8/events`, // Current year preseason
-        `${ESPN_API_BASE}/seasons/${previousYear}/types/2/teams/8/events`, // Previous year regular season (for Jan-Feb)
-        `${ESPN_API_BASE}/seasons/${nextYear}/types/2/teams/8/events`  // Next year (if late in current season)
+        `${ESPN_API_BASE}/seasons/${currentYear}/types/1/teams/8/events`,
+        `${ESPN_API_BASE}/seasons/${currentYear}/types/2/teams/8/events`,
+        `${ESPN_API_BASE}/seasons/${previousYear}/types/2/teams/8/events`,
+        `${ESPN_API_BASE}/seasons/${nextYear}/types/2/teams/8/events`
     ];
+
+    const combined = { items: [] };
+    const seen = new Set();
 
     for (const url of urls) {
         try {
@@ -119,8 +123,13 @@ async function getSchedule() {
             if (response.ok) {
                 const data = await response.json();
                 if (data.items && data.items.length > 0) {
-                    console.log(`Using schedule from: ${url}`);
-                    return data;
+                    console.log(`Adding live-score schedule from: ${url} (${data.items.length} games)`);
+                    for (const item of data.items) {
+                        const key = item.$ref || item.id;
+                        if (key && seen.has(key)) continue;
+                        if (key) seen.add(key);
+                        combined.items.push(item);
+                    }
                 }
             }
         } catch (error) {
@@ -128,21 +137,24 @@ async function getSchedule() {
         }
     }
 
-    throw new Error('No schedule data available');
+    if (combined.items.length === 0) {
+        throw new Error('No schedule data available');
+    }
+
+    return combined;
 }
 
 async function findLatestGame(schedule) {
     const now = new Date();
     const nowTime = now.getTime();
 
-    // Get actual event data from items
     if (!schedule.items || schedule.items.length === 0) {
         throw new Error('No games found in schedule');
     }
 
-    // Get the first 5 recent games
+    // Load all stubs, then pick the game closest to now (live / just finished / soon)
     const games = await Promise.all(
-        schedule.items.slice(0, 5).map(async (item) => {
+        schedule.items.map(async (item) => {
             try {
                 const response = await fetch(item.$ref);
                 return await response.json();
@@ -153,18 +165,16 @@ async function findLatestGame(schedule) {
         })
     );
 
-    // Filter out nulls
     const validGames = games.filter(game => game !== null && game.id);
+    validGames.sort((a, b) => new Date(a.date) - new Date(b.date));
 
-    // Find the game closest to now (could be past or future)
     let latestGame = null;
     let closestTimeDiff = Infinity;
 
     for (const game of validGames) {
         const gameTime = Date.parse(game.date);
         const timeDiff = Math.abs(gameTime - nowTime);
-        
-        // If this game is closer to now, use it
+
         if (timeDiff < closestTimeDiff) {
             closestTimeDiff = timeDiff;
             latestGame = game;
@@ -176,7 +186,6 @@ async function findLatestGame(schedule) {
         return latestGame.id;
     }
 
-    // Fallback to first game
     if (validGames.length > 0) {
         return validGames[0].id;
     }

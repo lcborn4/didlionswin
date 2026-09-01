@@ -361,18 +361,19 @@ export default function Home() {
             }
             
             // All result data comes from gameToShow - dynamic from API
+            const preseasonNote = gameToShow.seasonType === 'preseason' ? ' (Preseason)' : '';
             if (gameToShow.result === 'WIN') {
               mainAnswer = '✅ YES';
               mainAnswerColor = '#00aa00';
-              gameResult = `🏈 Game Over: ${gameToShow.name}`;
+              gameResult = `🏈 Game Over${preseasonNote}: ${gameToShow.name}`;
             } else if (gameToShow.result === 'LOSS') {
               mainAnswer = '❌ NO';
               mainAnswerColor = '#cc0000';
-              gameResult = `🏈 Game Over: ${gameToShow.name}`;
+              gameResult = `🏈 Game Over${preseasonNote}: ${gameToShow.name}`;
             } else if (gameToShow.result === 'TIE') {
               mainAnswer = '🤝 TIE';
               mainAnswerColor = '#ff8800';
-              gameResult = `🏈 Game Over: ${gameToShow.name}`;
+              gameResult = `🏈 Game Over${preseasonNote}: ${gameToShow.name}`;
             }
           } else if (gameStatus === 'STATUS_SCHEDULED' && gameToShow === scheduleData.currentGame) {
             // Upcoming game that hasn't started yet
@@ -446,6 +447,12 @@ export default function Home() {
     let latestGame = `🏈 Loading${loadingDots}`;
     let nextGame = `🏈 Loading${loadingDots}`;
 
+    const seasonLabel = (game: any) => {
+      if (game?.seasonType === 'preseason') return ' (Preseason)';
+      if (game?.seasonType === 'postseason') return ' (Playoffs)';
+      return '';
+    };
+
     if (scheduleData) {
       // Previous game
       if (scheduleData.previousGame) {
@@ -457,7 +464,7 @@ export default function Home() {
           day: 'numeric',
           year: 'numeric'
         });
-        prevGame = `${prevResult} ${prev.name} - ${prevGameDate} - Lions ${prev.score.lions}, ${prev.opponent} ${prev.score.opponent}`;
+        prevGame = `${prevResult} ${prev.name}${seasonLabel(prev)} - ${prevGameDate} - Lions ${prev.score.lions}, ${prev.opponent} ${prev.score.opponent}`;
       }
       
       // Latest game
@@ -470,7 +477,7 @@ export default function Home() {
           day: 'numeric',
           year: 'numeric'
         });
-        latestGame = `${latestResult} ${latest.name} - ${latestGameDate} - Lions ${latest.score.lions}, ${latest.opponent} ${latest.score.opponent}`;
+        latestGame = `${latestResult} ${latest.name}${seasonLabel(latest)} - ${latestGameDate} - Lions ${latest.score.lions}, ${latest.opponent} ${latest.score.opponent}`;
       }
       
       // Next game
@@ -497,7 +504,7 @@ export default function Home() {
               day: 'numeric',
               year: 'numeric'
             });
-            nextGame = `🏈 ${next.name} - ${gameDate}`;
+            nextGame = `🏈 ${next.name}${seasonLabel(next)} - ${gameDate}`;
           }
         } else {
           // Game is in the past or too soon, show placeholder
