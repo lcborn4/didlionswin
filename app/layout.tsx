@@ -9,10 +9,12 @@ export default function RootLayout({
         <html lang="en">
             <head>
                 <title>Did The Detroit Lions Win?</title>
-                <meta name="description" content="Check if the Detroit Lions won their latest game! Real-time scores and game updates." />
+                <meta name="description" content="Did the Detroit Lions win? Yes or no." />
+                <meta name="viewport" content="width=device-width, initial-scale=1" />
                 <style>{`
+                    html, body { margin: 0; background: #fff; color: #111; color-scheme: light; }
                     .game-result {
-                        font-size: 3rem;
+                        font-size: 1.5rem;
                         font-weight: bold;
                         text-align: center;
                         margin: 2rem 0;
