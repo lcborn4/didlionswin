@@ -16,7 +16,7 @@ const corsHeaders = {
     'Access-Control-Max-Age': '86400'
 };
 
-export const handler = async (event) => {
+export const handler = async (event, _context) => {
     if (event.httpMethod === 'OPTIONS' || event.requestContext?.http?.method === 'OPTIONS') {
         return { statusCode: 200, headers: corsHeaders, body: '' };
     }
@@ -123,7 +123,7 @@ function mergeEvents(...lists) {
             if (event?.id) byId.set(String(event.id), event);
         }
     }
-    return [...byId.values()];
+    return Array.from(byId.values());
 }
 
 function getCompetition(event) {

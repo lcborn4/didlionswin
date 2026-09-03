@@ -66,7 +66,7 @@ function mergeEvents(...lists: any[][]) {
       if (event?.id) byId.set(String(event.id), event);
     }
   }
-  return [...byId.values()];
+  return Array.from(byId.values());
 }
 
 function getCompetition(event: any) {
