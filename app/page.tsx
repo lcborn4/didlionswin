@@ -5,6 +5,7 @@ import dynamic from "next/dynamic";
 import styles from "@/styles/Home.module.css";
 import { getApiBase } from "./lib/api";
 import { fetchLionsAnswer, getLead, type LiveData } from "./lib/lions-answer";
+import packageJson from "../package.json";
 
 const MoreDetails = dynamic(() => import("./MoreDetails"), {
   ssr: false,
@@ -117,6 +118,16 @@ export default function Home() {
   }, []);
 
   const answer = liveData ? buildAnswer(liveData) : null;
+  const updatedAt = liveData?.timestamp
+    ? new Date(liveData.timestamp).toLocaleString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+        hour: "numeric",
+        minute: "2-digit",
+        timeZoneName: "short",
+      })
+    : null;
 
   return (
     <main className={`${styles.splash}${showMore ? ` ${styles.splashExpanded}` : ""}`}>
@@ -152,6 +163,11 @@ export default function Home() {
       )}
 
       {showMore && <MoreDetails liveData={liveData} />}
+
+      <p className={styles.meta}>
+        v{packageJson.version}
+        {updatedAt ? ` · ${updatedAt}` : ""}
+      </p>
     </main>
   );
 }

@@ -86,9 +86,6 @@ export default function MoreDetails({ liveData }: { liveData: LiveData | null })
   const [prevGame, setPrevGame] = useState("Loading previous game…");
   const [latestGame, setLatestGame] = useState("Loading latest game…");
   const [nextGame, setNextGame] = useState("Loading next game…");
-  const [lastUpdated, setLastUpdated] = useState<string | null>(
-    liveData?.timestamp || null
-  );
 
   const lionsScore = liveData?.score?.lions ?? "--";
   const opponentScore = liveData?.score?.opponent ?? "--";
@@ -108,10 +105,6 @@ export default function MoreDetails({ liveData }: { liveData: LiveData | null })
         if (!response.ok) return;
         const scheduleData = await response.json();
         if (cancelled) return;
-
-        if (scheduleData.timestamp) {
-          setLastUpdated(scheduleData.timestamp);
-        }
 
         if (scheduleData.previousGame) {
           const prev = scheduleData.previousGame;
@@ -210,31 +203,6 @@ export default function MoreDetails({ liveData }: { liveData: LiveData | null })
           💡 {selectedContent.fact}
         </p>
       </div>
-
-      {lastUpdated && (
-        <div
-          style={{
-            textAlign: "center",
-            marginTop: "3rem",
-            paddingTop: "2rem",
-            borderTop: "1px solid #e0e0e0",
-            fontSize: "0.875rem",
-            color: "#666",
-          }}
-        >
-          <p>
-            Last updated:{" "}
-            {new Date(lastUpdated).toLocaleString("en-US", {
-              month: "long",
-              day: "numeric",
-              year: "numeric",
-              hour: "numeric",
-              minute: "2-digit",
-              timeZoneName: "short",
-            })}
-          </p>
-        </div>
-      )}
     </div>
   );
 }
