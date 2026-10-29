@@ -19,11 +19,12 @@ export type ScheduleRow =
 
 export type ScheduleGroup = {
   label: string;
-  record: string | null;
   rows: ScheduleRow[];
 };
 
 export type SeasonSchedule = {
+  year: number;
+  record: string | null;
   games: ScheduleGame[];
   groups: ScheduleGroup[];
 };
@@ -56,6 +57,8 @@ export async function fetchSeasonSchedule(): Promise<SeasonSchedule> {
     .filter((game): game is ScheduleGame => game != null);
 
   return {
+    year,
+    record: regularRecord(games.filter((game) => game.seasonType === "regular")),
     games,
     groups: groupSchedule(games, regular.byeWeek),
   };
@@ -267,7 +270,6 @@ function groupSchedule(games: ScheduleGame[], byeWeek: number | null): ScheduleG
     }
     groups.push({
       label: labels[seasonType],
-      record: seasonType === "regular" ? regularRecord(seasonGames) : null,
       rows,
     });
   }
@@ -289,5 +291,5 @@ function regularRecord(games: ScheduleGame[]) {
     else if (game.result === "TIE") ties += 1;
   }
   if (!wins && !losses && !ties) return null;
-  return ties ? `${wins}–${losses}–${ties}` : `${wins}–${losses}`;
+  return ties ? `${wins}-${losses}-${ties}` : `${wins}-${losses}`;
 }

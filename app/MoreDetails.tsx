@@ -125,15 +125,23 @@ export default function MoreDetails({
             Current
           </button>
         )}
-        <button
-          type="button"
-          className={styles.scheduleToggle}
-          aria-expanded={scheduleOpen}
-          aria-controls="season-schedule"
-          onClick={() => setScheduleOpen((open) => !open)}
-        >
-          Schedule
-        </button>
+        <div className={styles.scheduleLink}>
+          {schedule && (
+            <span className={styles.scheduleSeason}>
+              {schedule.year}
+              {schedule.record ? ` (${schedule.record})` : ""}
+            </span>
+          )}
+          <button
+            type="button"
+            className={styles.scheduleToggle}
+            aria-expanded={scheduleOpen}
+            aria-controls="season-schedule"
+            onClick={() => setScheduleOpen((open) => !open)}
+          >
+            Schedule
+          </button>
+        </div>
         {scheduleOpen && (
           <div className={styles.schedulePanel} id="season-schedule">
             <SeasonList
@@ -223,7 +231,6 @@ function SeasonList({
         <div key={group.label}>
           <div className={styles.scheduleGroup}>
             <h4 className={styles.scheduleGroupLabel}>{group.label}</h4>
-            {group.record && <span className={styles.scheduleRecord}>{group.record}</span>}
           </div>
           <div className={styles.scheduleList}>
             {group.rows.map((row) =>

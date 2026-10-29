@@ -450,6 +450,20 @@
   border-bottom-color: #111;
 }
 
+.scheduleLink {
+  display: flex;
+  align-items: baseline;
+  gap: 0.55rem;
+}
+
+.scheduleSeason {
+  color: #111;
+  font-size: 0.95rem;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
 .scheduleBackdrop {
   position: fixed;
   inset: 0;
@@ -497,13 +511,6 @@
   font-weight: 600;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-}
-
-.scheduleRecord {
-  color: #111;
-  font-size: 0.95rem;
-  font-weight: 650;
-  font-variant-numeric: tabular-nums;
 }
 
 .scheduleList {
