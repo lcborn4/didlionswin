@@ -5,6 +5,7 @@ import dynamic from "next/dynamic";
 import styles from "@/styles/Home.module.css";
 import { getApiBase } from "./lib/api";
 import { fetchLionsAnswer, getLead, type LiveData } from "./lib/lions-answer";
+import type { ScheduleGame } from "./lib/schedule-list";
 import packageJson from "../package.json";
 
 const MoreDetails = dynamic(() => import("./MoreDetails"), {
@@ -69,6 +70,51 @@ function buildAnswer(data: LiveData): AnswerView {
   return { text: "NO GAME", color: "#666", subhead: null, scoreLine: null };
 }
 
+function answerFromSchedule(game: ScheduleGame): AnswerView {
+  if (game.status === "live") {
+    const lions = game.lionsScore ?? 0;
+    const opponent = game.opponentScore ?? 0;
+    const scoreLine = `${lions} – ${opponent}`;
+    if (lions > opponent) {
+      return {
+        text: "YES",
+        color: "#1a7f37",
+        subhead: "They're currently winning.",
+        scoreLine,
+      };
+    }
+    if (lions < opponent) {
+      return {
+        text: "NO",
+        color: "#c5221f",
+        subhead: "They're currently losing.",
+        scoreLine,
+      };
+    }
+    return {
+      text: "TIE",
+      color: "#9a6b12",
+      subhead: "They're currently tied.",
+      scoreLine,
+    };
+  }
+
+  if (game.result === "WIN") {
+    return { text: "YES", color: "#1a7f37", subhead: null, scoreLine: null };
+  }
+  if (game.result === "LOSS") {
+    return { text: "NO", color: "#c5221f", subhead: null, scoreLine: null };
+  }
+  if (game.result === "TIE") {
+    return { text: "TIE", color: "#9a6b12", subhead: null, scoreLine: null };
+  }
+  if (game.status === "scheduled") {
+    return { text: "NOT YET", color: "#444", subhead: null, scoreLine: null };
+  }
+
+  return { text: "NO GAME", color: "#666", subhead: null, scoreLine: null };
+}
+
 async function loadAnswerFromApi(): Promise<LiveData> {
   const response = await fetch(`${getApiBase()}/live-score`);
   if (!response.ok) throw new Error("live-score failed");
@@ -79,6 +125,7 @@ export default function Home() {
   const [liveData, setLiveData] = useState<LiveData | null>(null);
   const [error, setError] = useState(false);
   const [showMore, setShowMore] = useState(false);
+  const [pickedGame, setPickedGame] = useState<ScheduleGame | null>(null);
 
   useEffect(() => {
     let poll: ReturnType<typeof setInterval> | null = null;
@@ -117,7 +164,11 @@ export default function Home() {
     };
   }, []);
 
-  const answer = liveData ? buildAnswer(liveData) : null;
+  const answer = pickedGame
+    ? answerFromSchedule(pickedGame)
+    : liveData
+      ? buildAnswer(liveData)
+      : null;
   const updatedAt = liveData?.timestamp
     ? new Date(liveData.timestamp).toLocaleString("en-US", {
         month: "short",
@@ -157,13 +208,23 @@ export default function Home() {
           className={styles.moreButton}
           aria-expanded={showMore}
           aria-controls="game-details"
-          onClick={() => setShowMore((open) => !open)}
+          onClick={() =>
+            setShowMore((open) => {
+              if (open) {
+                setPickedGame(null);
+                window.scrollTo(0, 0);
+              }
+              return !open;
+            })
+          }
         >
           {showMore ? "Less" : "More"}
         </button>
       )}
 
-      {showMore && <MoreDetails liveData={liveData} />}
+      {showMore && (
+        <MoreDetails liveData={liveData} onGameChange={setPickedGame} />
+      )}
 
       <p className={styles.meta}>
         v{packageJson.version}

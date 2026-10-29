@@ -10,17 +10,55 @@ import {
   type GameSummary,
   type PlayerGroup,
 } from "./lib/game-summary";
+import {
+  fetchSeasonSchedule,
+  type ScheduleGame,
+  type SeasonSchedule,
+} from "./lib/schedule-list";
 
-export default function MoreDetails({ liveData }: { liveData: LiveData | null }) {
+export default function MoreDetails({
+  liveData,
+  onGameChange,
+}: {
+  liveData: LiveData | null;
+  onGameChange: (game: ScheduleGame | null) => void;
+}) {
+  const [schedule, setSchedule] = useState<SeasonSchedule | null>(null);
+  const [scheduleError, setScheduleError] = useState(false);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [scheduleOpen, setScheduleOpen] = useState(false);
   const [summary, setSummary] = useState<GameSummary | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(false);
 
-  const gameId = liveData?.gameId;
-  const scheduled = liveData?.status === "STATUS_SCHEDULED";
+  const onCurrent = !selectedId || selectedId === liveData?.gameId;
+  const activeId = selectedId ?? liveData?.gameId ?? null;
+  const activeGame = schedule?.games.find((game) => game.id === activeId) ?? null;
+  const scheduled = activeGame
+    ? activeGame.status === "scheduled"
+    : liveData?.status === "STATUS_SCHEDULED";
+  const activeIsLive = activeGame ? activeGame.status === "live" : Boolean(liveData?.isLive);
+  const headlineScore =
+    !selectedId || selectedId === liveData?.gameId
+      ? `${liveData?.score?.lions ?? ""}-${liveData?.score?.opponent ?? ""}`
+      : "";
 
   useEffect(() => {
-    if (!gameId || scheduled) {
+    let cancelled = false;
+    fetchSeasonSchedule()
+      .then((next) => {
+        if (!cancelled) setSchedule(next);
+      })
+      .catch(() => {
+        if (!cancelled) setScheduleError(true);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!activeId || scheduled) {
       setSummary(null);
       setLoading(false);
       setError(false);
@@ -28,7 +66,7 @@ export default function MoreDetails({ liveData }: { liveData: LiveData | null })
     }
 
     let cancelled = false;
-    setSummary((current) => (current?.gameId === gameId ? current : null));
+    setSummary((current) => (current?.gameId === activeId ? current : null));
     setLoading(true);
     setError(false);
 
@@ -45,32 +83,93 @@ export default function MoreDetails({ liveData }: { liveData: LiveData | null })
       }
     }
 
-    load(gameId);
-    const timer = liveData?.isLive ? setInterval(() => load(gameId), 30000) : null;
+    load(activeId);
+    const timer = activeIsLive ? setInterval(() => load(activeId), 30000) : null;
 
     return () => {
       cancelled = true;
       if (timer) clearInterval(timer);
     };
-  }, [gameId, scheduled, liveData?.isLive, liveData?.score?.lions, liveData?.score?.opponent]);
+  }, [activeId, scheduled, activeIsLive, headlineScore]);
+
+  function showGame(game: ScheduleGame | null) {
+    if (!game || game.id === liveData?.gameId) {
+      setSelectedId(null);
+      onGameChange(null);
+    } else {
+      setSelectedId(game.id);
+      onGameChange(game);
+    }
+    setScheduleOpen(false);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  function chooseGame(id: string) {
+    showGame(schedule?.games.find((game) => game.id === id) ?? null);
+  }
+
+  useEffect(() => {
+    if (!scheduleOpen) return;
+    function onKey(event: KeyboardEvent) {
+      if (event.key === "Escape") setScheduleOpen(false);
+    }
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [scheduleOpen]);
 
   return (
     <div className={styles.morePanel} id="game-details">
+      <div className={styles.scheduleMenu}>
+        {!onCurrent && (
+          <button type="button" className={styles.scheduleToggle} onClick={() => showGame(null)}>
+            Current
+          </button>
+        )}
+        <button
+          type="button"
+          className={styles.scheduleToggle}
+          aria-expanded={scheduleOpen}
+          aria-controls="season-schedule"
+          onClick={() => setScheduleOpen((open) => !open)}
+        >
+          Schedule
+        </button>
+        {scheduleOpen && (
+          <div className={styles.schedulePanel} id="season-schedule">
+            <SeasonList
+              schedule={schedule}
+              error={scheduleError}
+              activeId={activeId}
+              onSelect={chooseGame}
+            />
+          </div>
+        )}
+      </div>
+      {scheduleOpen && (
+        <button
+          type="button"
+          className={styles.scheduleBackdrop}
+          aria-label="Close schedule"
+          onClick={() => setScheduleOpen(false)}
+        />
+      )}
       <div className={styles.boxScore}>
-        <GameHeading liveData={liveData} summary={summary} />
-        {scheduled && (
-          <p className={styles.boxNote}>The box score will show up after kickoff.</p>
-        )}
-        {!scheduled && loading && !summary && (
-          <p className={styles.boxNote}>Loading box score…</p>
-        )}
-        {!scheduled && !loading && (error || !gameId) && !summary && (
-          <p className={styles.boxNote}>Couldn’t load the box score.</p>
-        )}
-        {summary && !summary.available && summary.gameId === gameId && (
-          <p className={styles.boxNote}>{summary.message}</p>
-        )}
-        {summary?.available && summary.gameId === gameId && <BoxScore summary={summary} />}
+        <div>
+          <GameHeading liveData={liveData} summary={summary} game={activeGame} />
+          {scheduled && (
+            <p className={styles.boxNote}>The box score will show up after kickoff.</p>
+          )}
+          {!scheduled && loading && !summary && (
+            <p className={styles.boxNote}>Loading box score…</p>
+          )}
+          {!scheduled && !loading && (error || !activeId) && !summary && (
+            <p className={styles.boxNote}>Couldn’t load the box score.</p>
+          )}
+          {summary && !summary.available && summary.gameId === activeId && (
+            <p className={styles.boxNote}>{summary.message}</p>
+          )}
+          {summary?.available && summary.gameId === activeId && <BoxScore summary={summary} />}
+        </div>
       </div>
     </div>
   );
@@ -79,16 +178,21 @@ export default function MoreDetails({ liveData }: { liveData: LiveData | null })
 function GameHeading({
   liveData,
   summary,
+  game,
 }: {
   liveData: LiveData | null;
   summary: GameSummary | null;
+  game: ScheduleGame | null;
 }) {
-  const title = summary?.title || liveData?.name || "Game details";
+  const title = summary?.title || game?.title || liveData?.name || "Game details";
+  const seasonType = game?.seasonType || liveData?.seasonType;
   const bits: string[] = [];
-  if (liveData?.seasonType === "preseason") bits.push("Preseason");
-  if (liveData?.seasonType === "postseason") bits.push("Playoffs");
+  if (seasonType === "preseason") bits.push("Preseason");
+  if (seasonType === "postseason") bits.push("Playoffs");
   if (summary?.week) bits.push(`Week ${summary.week}`);
+  else if (game?.seasonType === "regular" && game.weekLabel) bits.push(`Week ${game.weekLabel}`);
   if (summary?.detail) bits.push(summary.detail);
+  else if (game?.status === "scheduled" && game.timeLabel) bits.push(game.timeLabel);
   else if (liveData?.date) bits.push(formatDate(liveData.date));
 
   return (
@@ -97,6 +201,82 @@ function GameHeading({
       <h2 className={styles.boxTitle}>{title}</h2>
       {summary?.venue && <p className={styles.boxVenue}>{summary.venue}</p>}
     </header>
+  );
+}
+
+function SeasonList({
+  schedule,
+  error,
+  activeId,
+  onSelect,
+}: {
+  schedule: SeasonSchedule | null;
+  error: boolean;
+  activeId: string | null;
+  onSelect: (id: string) => void;
+}) {
+  return (
+    <section className={styles.schedule} aria-label="Lions schedule">
+      {!schedule && !error && <p className={styles.boxNote}>Loading schedule…</p>}
+      {error && <p className={styles.boxNote}>Couldn’t load the schedule.</p>}
+      {schedule?.groups.map((group) => (
+        <div key={group.label}>
+          <div className={styles.scheduleGroup}>
+            <h4 className={styles.scheduleGroupLabel}>{group.label}</h4>
+            {group.record && <span className={styles.scheduleRecord}>{group.record}</span>}
+          </div>
+          <div className={styles.scheduleList}>
+            {group.rows.map((row) =>
+              row.kind === "bye" ? (
+                <div key={`${group.label}-bye`} className={styles.scheduleBye}>
+                  Bye
+                </div>
+              ) : (
+                <button
+                  key={row.game.id}
+                  type="button"
+                  className={styles.scheduleRow}
+                  aria-current={row.game.id === activeId ? "true" : undefined}
+                  onClick={() => onSelect(row.game.id)}
+                >
+                  <span className={styles.scheduleWeek}>{row.game.weekLabel}</span>
+                  <span className={styles.scheduleDate}>{row.game.dateLabel}</span>
+                  <span className={styles.scheduleOpp}>
+                    {row.game.place} {row.game.opponent}
+                  </span>
+                  <ScheduleResult game={row.game} />
+                </button>
+              )
+            )}
+          </div>
+        </div>
+      ))}
+    </section>
+  );
+}
+
+function ScheduleResult({ game }: { game: ScheduleGame }) {
+  const score =
+    game.lionsScore != null && game.opponentScore != null
+      ? `${game.lionsScore}–${game.opponentScore}`
+      : "";
+  if (game.status === "live") {
+    return <span className={styles.scheduleLive}>Live {score}</span>;
+  }
+  if (game.status === "scheduled") {
+    return <span className={styles.scheduleTime}>{game.timeLabel}</span>;
+  }
+  const mark = game.result === "WIN" ? "W" : game.result === "LOSS" ? "L" : "T";
+  const tone =
+    game.result === "WIN"
+      ? styles.scheduleWin
+      : game.result === "LOSS"
+        ? styles.scheduleLoss
+        : styles.scheduleTime;
+  return (
+    <span className={tone}>
+      {mark} {score}
+    </span>
   );
 }
 
