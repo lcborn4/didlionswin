@@ -2,207 +2,336 @@
 
 import { useEffect, useState } from "react";
 import styles from "@/styles/Home.module.css";
-import { getApiBase } from "./lib/api";
-
 import type { LiveData } from "./lib/lions-answer";
-
-type GameRow = {
-  name?: string;
-  date?: string;
-  opponent?: string;
-  result?: string;
-  seasonType?: string;
-  score?: { lions?: number; opponent?: number };
-};
-
-const imageFacts = [
-  {
-    image: "/images/good/aslan-roar.gif",
-    fact: "The Detroit Lions first started in July 12, 1930 as the Portsmouth Spartans",
-  },
-  {
-    image: "/images/good/cook_fumble.jpg",
-    fact: "The Detroit Lions first season was in 1930",
-  },
-  {
-    image: "/images/good/GdgB9HaWYAAP_BW.jpeg",
-    fact: "The Detroit Lions have 4 NFL Championships: 1935, 1952, 1953, 1957",
-  },
-  {
-    image: "/images/good/GdgLgm5XcAAKXl0.jpeg",
-    fact: "The Detroit Lions have 5 NFL Western Division Championships: 1935, 1952, 1953, 1954, 1957",
-  },
-  {
-    image: "/images/good/hutchinson_sack.jpg",
-    fact: "The Detroit Lions have 3 NFC Central Division Championships: 1983, 1991, 1993",
-  },
-  {
-    image: "/images/good/IMG_1090.jpeg",
-    fact: "The Detroit Lions all time record: 579-702-34",
-  },
-  {
-    image: "/images/good/IMG_8922.GIF",
-    fact: "The Detroit Lions winningest coach is Wayne Fontes: 66-67-0",
-  },
-  {
-    image: "/images/good/lionswin.jpg",
-    fact: "The Detroit Lions All-time Passing Leader: Matthew Stafford 3,898/6,224, 45,109 yds, 282 TD",
-  },
-  {
-    image: "/images/good/out.gif",
-    fact: "The Detroit Lions All-time Rushing Leader: Barry Sanders 3,062 att, 15,269 yds, 99 TD",
-  },
-  {
-    image: "/images/good/IMG_7310.JPG",
-    fact: "The Detroit Lions All-time Receiving Leader: Calvin Johnson 11,619 yds, 83 TD",
-  },
-];
-
-function seasonLabel(game?: GameRow) {
-  if (game?.seasonType === "preseason") return " (Preseason)";
-  if (game?.seasonType === "postseason") return " (Playoffs)";
-  return "";
-}
-
-function formatGameLine(game: GameRow, emoji: string) {
-  const date = game.date
-    ? new Date(game.date).toLocaleDateString("en-US", {
-        month: "numeric",
-        day: "numeric",
-        year: "numeric",
-      })
-    : "";
-  const score =
-    game.score?.lions != null && game.score?.opponent != null
-      ? ` - Lions ${game.score.lions}, ${game.opponent} ${game.score.opponent}`
-      : "";
-  return `${emoji} ${game.name}${seasonLabel(game)}${date ? ` - ${date}` : ""}${score}`;
-}
+import {
+  fetchGameSummary,
+  type FlowPoint,
+  type FlowQuarter,
+  type GameSummary,
+  type PlayerGroup,
+} from "./lib/game-summary";
 
 export default function MoreDetails({ liveData }: { liveData: LiveData | null }) {
-  const [selectedContent] = useState(
-    () => imageFacts[Math.floor(Math.random() * imageFacts.length)]
-  );
-  const [prevGame, setPrevGame] = useState("Loading previous game…");
-  const [latestGame, setLatestGame] = useState("Loading latest game…");
-  const [nextGame, setNextGame] = useState("Loading next game…");
+  const [summary, setSummary] = useState<GameSummary | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(false);
 
-  const lionsScore = liveData?.score?.lions ?? "--";
-  const opponentScore = liveData?.score?.opponent ?? "--";
-  const preseasonNote = liveData?.seasonType === "preseason" ? " (Preseason)" : "";
-  const gameResult = liveData?.isLive
-    ? `LIVE: ${liveData.name || ""}`
-    : liveData?.name
-      ? `Game Over${preseasonNote}: ${liveData.name}`
-      : "Game details";
+  const gameId = liveData?.gameId;
+  const scheduled = liveData?.status === "STATUS_SCHEDULED";
 
   useEffect(() => {
+    if (!gameId || scheduled) {
+      setSummary(null);
+      setLoading(false);
+      setError(false);
+      return;
+    }
+
     let cancelled = false;
+    setSummary((current) => (current?.gameId === gameId ? current : null));
+    setLoading(true);
+    setError(false);
 
-    async function loadSchedule() {
+    async function load(id: string) {
       try {
-        const response = await fetch(`${getApiBase()}/schedule`);
-        if (!response.ok) return;
-        const scheduleData = await response.json();
+        const next = await fetchGameSummary(id);
         if (cancelled) return;
-
-        if (scheduleData.previousGame) {
-          const prev = scheduleData.previousGame;
-          const resultEmoji =
-            prev.result === "WIN" ? "✅" : prev.result === "LOSS" ? "❌" : "🤝";
-          setPrevGame(formatGameLine(prev, resultEmoji));
-        } else {
-          setPrevGame("No previous game");
-        }
-
-        if (scheduleData.latestGame) {
-          const latest = scheduleData.latestGame;
-          const resultEmoji =
-            latest.result === "WIN" ? "✅" : latest.result === "LOSS" ? "❌" : "🤝";
-          setLatestGame(formatGameLine(latest, resultEmoji));
-        } else {
-          setLatestGame("No recent game");
-        }
-
-        if (scheduleData.nextGame) {
-          const next = scheduleData.nextGame;
-          const nextDate = new Date(next.date);
-          const isPlaceholder =
-            !next.opponent ||
-            next.opponent === "TBD" ||
-            next.name?.includes("Regular Season") ||
-            !next.name?.includes("Detroit Lions");
-
-          if (nextDate.getTime() > Date.now() + 60 * 60 * 1000 && !isPlaceholder) {
-            const gameDate = nextDate.toLocaleDateString("en-US", {
-              month: "numeric",
-              day: "numeric",
-              year: "numeric",
-            });
-            setNextGame(`🏈 ${next.name}${seasonLabel(next)} - ${gameDate}`);
-          } else {
-            setNextGame("Next game TBD");
-          }
-        } else {
-          setNextGame("No upcoming games");
-        }
+        setSummary(next);
+        setError(false);
       } catch {
-        setPrevGame("Unable to load previous game");
-        setLatestGame("Unable to load latest game");
-        setNextGame("Unable to load next game");
+        if (!cancelled) setError(true);
+      } finally {
+        if (!cancelled) setLoading(false);
       }
     }
 
-    loadSchedule();
+    load(gameId);
+    const timer = liveData?.isLive ? setInterval(() => load(gameId), 30000) : null;
+
     return () => {
       cancelled = true;
+      if (timer) clearInterval(timer);
     };
-  }, []);
+  }, [gameId, scheduled, liveData?.isLive, liveData?.score?.lions, liveData?.score?.opponent]);
 
   return (
-    <div className={styles.morePanel}>
-      <div className="game-result" id="game-result">
-        {gameResult}
-      </div>
-
-      <div className="game-score" id="game-score">
-        <div className="score-display">
-          <span className="lions-score" id="lions-score">
-            {lionsScore}
-          </span>
-          <span className="score-separator">-</span>
-          <span className="opponent-score" id="opponent-score">
-            {opponentScore}
-          </span>
-        </div>
-      </div>
-
-      <div className={styles.grid}>
-        <div>
-          <h3>Previous Game</h3>
-          <div id="prev-game">{prevGame}</div>
-        </div>
-        <div>
-          <h3>Latest Game</h3>
-          <div id="latest-game">{latestGame}</div>
-        </div>
-        <div>
-          <h3>Next Game</h3>
-          <div id="next-game">{nextGame}</div>
-        </div>
-      </div>
-
-      <div style={{ textAlign: "center", margin: "2rem 0" }}>
-        <img
-          src={selectedContent.image}
-          alt="Lions"
-          style={{ maxWidth: "300px", height: "auto" }}
-          loading="lazy"
-        />
-        <p style={{ marginTop: "1rem", fontSize: "1.2rem" }}>
-          💡 {selectedContent.fact}
-        </p>
+    <div className={styles.morePanel} id="game-details">
+      <div className={styles.boxScore}>
+        <GameHeading liveData={liveData} summary={summary} />
+        {scheduled && (
+          <p className={styles.boxNote}>The box score will show up after kickoff.</p>
+        )}
+        {!scheduled && loading && !summary && (
+          <p className={styles.boxNote}>Loading box score…</p>
+        )}
+        {!scheduled && !loading && (error || !gameId) && !summary && (
+          <p className={styles.boxNote}>Couldn’t load the box score.</p>
+        )}
+        {summary && !summary.available && summary.gameId === gameId && (
+          <p className={styles.boxNote}>{summary.message}</p>
+        )}
+        {summary?.available && summary.gameId === gameId && <BoxScore summary={summary} />}
       </div>
     </div>
   );
+}
+
+function GameHeading({
+  liveData,
+  summary,
+}: {
+  liveData: LiveData | null;
+  summary: GameSummary | null;
+}) {
+  const title = summary?.title || liveData?.name || "Game details";
+  const bits: string[] = [];
+  if (liveData?.seasonType === "preseason") bits.push("Preseason");
+  if (liveData?.seasonType === "postseason") bits.push("Playoffs");
+  if (summary?.week) bits.push(`Week ${summary.week}`);
+  if (summary?.detail) bits.push(summary.detail);
+  else if (liveData?.date) bits.push(formatDate(liveData.date));
+
+  return (
+    <header className={styles.boxHeader}>
+      {bits.length > 0 && <p className={styles.boxKicker}>{bits.join(" · ")}</p>}
+      <h2 className={styles.boxTitle}>{title}</h2>
+      {summary?.venue && <p className={styles.boxVenue}>{summary.venue}</p>}
+    </header>
+  );
+}
+
+function formatDate(iso: string) {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return "";
+  return date.toLocaleDateString("en-US", {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+  });
+}
+
+function BoxScore({ summary }: { summary: GameSummary }) {
+  return (
+    <>
+      {summary.linescore.length > 0 && (
+        <table className={styles.linescore}>
+          <caption className={styles.srOnly}>Score by quarter</caption>
+          <thead>
+            <tr>
+              <th scope="col" />
+              {summary.periodLabels.map((label) => (
+                <th key={label} scope="col">
+                  {label.replace("Q", "")}
+                </th>
+              ))}
+              <th scope="col">T</th>
+            </tr>
+          </thead>
+          <tbody>
+            {summary.linescore.map((row) => (
+              <tr key={row.abbrev}>
+                <th scope="row" className={row.isLions ? styles.lionsName : undefined}>
+                  {row.abbrev}
+                </th>
+                {row.quarters.map((quarter, index) => (
+                  <td key={`${row.abbrev}-${index}`}>{quarter}</td>
+                ))}
+                <td className={row.isLions ? styles.lionsTotal : styles.totalCell}>
+                  {row.total}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+
+      {(summary.flow || summary.scoringPlays.length > 0) && (
+        <>
+          <h3 className={styles.sectionLabel}>Game flow</h3>
+          {summary.flow && (
+            <ScoreFlowChart
+              points={summary.flow.points}
+              quarters={summary.flow.quarters}
+              maxT={summary.flow.maxT}
+              lionsAbbrev={summary.lionsAbbrev}
+              opponentAbbrev={summary.opponentAbbrev}
+            />
+          )}
+          {summary.scoringPlays.length > 0 && (
+            <ol className={styles.scoringList}>
+              {summary.scoringPlays.map((play) => (
+                <li key={play.id} className={styles.scorePlay}>
+                  <span className={styles.scoreWhen}>{play.when}</span>
+                  <span className={play.isLions ? styles.lionsName : styles.scoreTeam}>
+                    {play.teamAbbrev}
+                    {play.kind ? ` ${play.kind}` : ""}
+                  </span>
+                  <span className={styles.scoreText}>{play.text}</span>
+                  <span className={styles.scoreNow}>{play.score}</span>
+                </li>
+              ))}
+            </ol>
+          )}
+        </>
+      )}
+
+      {summary.teamStats.length > 0 && (
+        <>
+          <h3 className={styles.sectionLabel}>Team stats</h3>
+          <div className={styles.statTable}>
+            <div className={styles.statHead}>
+              <span className={styles.lionsName}>{summary.lionsAbbrev}</span>
+              <span />
+              <span>{summary.opponentAbbrev}</span>
+            </div>
+            {summary.teamStats.map((stat) => (
+              <div key={stat.label} className={styles.statRow}>
+                <span>{stat.lions}</span>
+                <span className={styles.statLabel}>{stat.label}</span>
+                <span>{stat.opponent}</span>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+
+      {summary.playerGroups.map((group) => (
+        <PlayerTable key={group.title} group={group} />
+      ))}
+    </>
+  );
+}
+
+function PlayerTable({ group }: { group: PlayerGroup }) {
+  return (
+    <>
+      <h3 className={styles.sectionLabel}>{group.title}</h3>
+      <div className={styles.tableScroll}>
+        <table className={styles.playerTable}>
+          <thead>
+            <tr>
+              <th scope="col">Player</th>
+              {group.labels.map((label) => (
+                <th key={label} scope="col">
+                  {label}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          {group.teams.map((team) => (
+            <tbody key={`${group.title}-${team.name}`}>
+              <tr className={styles.playerTeam}>
+                <th colSpan={group.labels.length + 1}>{team.name}</th>
+              </tr>
+              {team.rows.map((row) => (
+                <tr key={`${team.name}-${row.name}`}>
+                  <th scope="row">{row.name}</th>
+                  {row.stats.map((stat, index) => (
+                    <td key={`${row.name}-${group.labels[index]}`}>{stat}</td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          ))}
+        </table>
+      </div>
+    </>
+  );
+}
+
+function ScoreFlowChart({
+  points,
+  quarters,
+  maxT,
+  lionsAbbrev,
+  opponentAbbrev,
+}: {
+  points: FlowPoint[];
+  quarters: FlowQuarter[];
+  maxT: number;
+  lionsAbbrev: string;
+  opponentAbbrev: string;
+}) {
+  if (points.length < 2 || maxT <= 0) return null;
+
+  const width = 640;
+  const height = 220;
+  const pad = { l: 46, r: 16, t: 32, b: 46 };
+  const innerW = width - pad.l - pad.r;
+  const innerH = height - pad.t - pad.b;
+  const yMax = axisMax(Math.max(...points.map((point) => Math.max(point.lions, point.opponent))));
+  const xOf = (t: number) => pad.l + (t / maxT) * innerW;
+  const yOf = (score: number) => pad.t + (1 - score / yMax) * innerH;
+  const last = points[points.length - 1];
+  const ticks = [0, yMax];
+
+  return (
+    <figure className={styles.flowFigure}>
+      <svg
+        className={styles.flowChart}
+        viewBox={`0 0 ${width} ${height}`}
+        role="img"
+        aria-label={`Game flow. ${lionsAbbrev} ${last.lions}, ${opponentAbbrev} ${last.opponent}.`}
+      >
+        {quarters.map((quarter, index) => {
+          const x = xOf(quarter.start);
+          const w = Math.max(0, xOf(quarter.end) - x);
+          return (
+            <g key={quarter.label}>
+              {index % 2 === 1 && (
+                <rect x={x} y={pad.t} width={w} height={innerH} fill="#f4f4f4" />
+              )}
+              <text x={x + w / 2} y={height - 16} textAnchor="middle" fill="#999">
+                {quarter.label}
+              </text>
+            </g>
+          );
+        })}
+        {ticks.map((tick) => (
+          <g key={tick}>
+            <line
+              className={styles.flowGrid}
+              x1={pad.l}
+              x2={width - pad.r}
+              y1={yOf(tick)}
+              y2={yOf(tick)}
+            />
+            <text x={pad.l - 8} y={yOf(tick) + 4} textAnchor="end" fill="#999">
+              {tick}
+            </text>
+          </g>
+        ))}
+        <path className={styles.flowOpp} d={stepPath(points, "opponent", xOf, yOf)} />
+        <path className={styles.flowLions} d={stepPath(points, "lions", xOf, yOf)} />
+      </svg>
+      <figcaption className={styles.flowLegend}>
+        <span>
+          <i className={styles.swatch} />
+          {lionsAbbrev} {last.lions}
+        </span>
+        <span>
+          <i className={styles.swatchOpp} />
+          {opponentAbbrev} {last.opponent}
+        </span>
+      </figcaption>
+    </figure>
+  );
+}
+
+function stepPath(
+  points: FlowPoint[],
+  key: "lions" | "opponent",
+  xOf: (t: number) => number,
+  yOf: (score: number) => number
+) {
+  let path = `M${xOf(points[0].t).toFixed(1)} ${yOf(points[0][key]).toFixed(1)}`;
+  for (let index = 1; index < points.length; index++) {
+    path += ` H${xOf(points[index].t).toFixed(1)} V${yOf(points[index][key]).toFixed(1)}`;
+  }
+  return path;
+}
+
+function axisMax(score: number) {
+  if (score <= 0) return 10;
+  return Math.ceil((score + 1) / 10) * 10;
 }

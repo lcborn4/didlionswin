@@ -156,6 +156,7 @@ export default function Home() {
           type="button"
           className={styles.moreButton}
           aria-expanded={showMore}
+          aria-controls="game-details"
           onClick={() => setShowMore((open) => !open)}
         >
           {showMore ? "Less" : "More"}
